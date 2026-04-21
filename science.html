@@ -60,6 +60,8 @@ body::before {
 .nav-tab.geo  { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); }
 .nav-tab.dec  { background: rgba(245,158,11,.12); color: #fcd34d; border: 1px solid rgba(245,158,11,.3); }
 .nav-tab.sci  { background: rgba(5,150,105,.22);  color: #6ee7b7; border: 1px solid rgba(5,150,105,.45); }
+.nav-tab.home { background: rgba(255,255,255,.07); color: var(--muted); border: 1px solid rgba(255,255,255,.12); }
+.nav-tab.home:hover { background: rgba(255,255,255,.14); color: var(--text); }
 .nav-tab.geo:hover  { background: rgba(124,58,237,.3); }
 .nav-tab.dec:hover  { background: rgba(245,158,11,.25); }
 .nav-tab.sci:hover  { background: rgba(5,150,105,.38); }
@@ -218,6 +220,7 @@ body::before {
 
 <!-- TOP NAV -->
 <nav class="top-nav">
+  <a href="accueil.html"  class="nav-tab home">🏠 Accueil</a>
   <a href="index.html"    class="nav-tab geo">📐 Géométrie</a>
   <a href="decimaux.html" class="nav-tab dec">🔢 Décimaux</a>
   <span                   class="nav-tab sci">🔬 Sciences</span>
@@ -235,7 +238,10 @@ body::before {
 
 <!-- QUIZ -->
 <div id="quiz-screen" class="screen">
-  <button class="back-btn" onclick="goHome()">← Accueil</button>
+  <div style="display:flex;gap:10px;margin-bottom:18px">
+    <button class="back-btn" style="margin-bottom:0" onclick="goHome()">← Sujets</button>
+    <a href="accueil.html" class="back-btn" style="text-decoration:none;margin-bottom:0">🏠 Accueil</a>
+  </div>
   <div class="quiz-title" id="quiz-title"></div>
   <div class="prog-row">
     <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>

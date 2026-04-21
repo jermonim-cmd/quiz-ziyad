@@ -121,7 +121,10 @@ body::before {
 </div>
 
 <div id="quiz-screen" class="screen">
-  <button class="back-btn" onclick="goHome()">← Accueil</button>
+  <div style="display:flex;gap:10px;margin-bottom:18px">
+    <button class="back-btn" style="margin-bottom:0" onclick="goHome()">← Sujets</button>
+    <a href="accueil.html" class="back-btn" style="text-decoration:none;margin-bottom:0">🏠 Accueil</a>
+  </div>
   <div class="quiz-title" id="quiz-title"></div>
   <div class="prog-row">
     <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
