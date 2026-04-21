@@ -8,9 +8,9 @@
       <stop offset="0%" stop-color="#a78bfa"/>
       <stop offset="100%" stop-color="#7c3aed"/>
     </linearGradient>
-    <linearGradient id="amber" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#d97706"/>
-      <stop offset="100%" stop-color="#fcd34d"/>
+    <linearGradient id="orange" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ea580c"/>
+      <stop offset="100%" stop-color="#fb923c"/>
     </linearGradient>
   </defs>
 
@@ -18,32 +18,26 @@
   <rect width="512" height="512" rx="110" fill="url(#bg)"/>
 
   <!-- Subtle grid lines -->
-  <line x1="0" y1="170" x2="512" y2="170" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-  <line x1="0" y1="340" x2="512" y2="340" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-  <line x1="170" y1="0" x2="170" y2="512" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-  <line x1="340" y1="0" x2="340" y2="512" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <line x1="0" y1="256" x2="512" y2="256" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <line x1="256" y1="0" x2="256" y2="512" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
 
-  <!-- Large triangle (geometry) -->
-  <polygon points="256,70 90,390 422,390"
-    fill="none" stroke="url(#purple)" stroke-width="22"
-    stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- Left half: Z for Ziyad (purple) -->
+  <text x="138" y="310" font-family="'Segoe UI', Arial, sans-serif"
+        font-size="220" font-weight="900" fill="url(#purple)"
+        text-anchor="middle" opacity="0.95">Z</text>
 
-  <!-- Right-angle mark inside triangle -->
-  <polyline points="200,390 200,340 250,340"
-    fill="none" stroke="url(#purple)" stroke-width="14"
-    stroke-linejoin="round" stroke-linecap="round" opacity="0.7"/>
+  <!-- Right half: E for Elyes (orange) -->
+  <text x="374" y="310" font-family="'Segoe UI', Arial, sans-serif"
+        font-size="220" font-weight="900" fill="url(#orange)"
+        text-anchor="middle" opacity="0.95">E</text>
 
-  <!-- Decimal dot (orange) -->
-  <circle cx="340" cy="390" r="22" fill="url(#amber)"/>
+  <!-- Divider line -->
+  <line x1="256" y1="80" x2="256" y2="432" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
 
-  <!-- "Z" for Ziyad — top right -->
-  <text x="400" y="130" font-family="'Segoe UI', Arial, sans-serif"
-        font-size="100" font-weight="900" fill="url(#amber)" opacity="0.9"
-        text-anchor="middle">Z</text>
-
-  <!-- Tiny sparkles -->
-  <circle cx="80"  cy="80"  r="7" fill="#a78bfa" opacity="0.6"/>
-  <circle cx="440" cy="60"  r="5" fill="#60a5fa" opacity="0.5"/>
-  <circle cx="460" cy="430" r="6" fill="#fcd34d" opacity="0.4"/>
-  <circle cx="55"  cy="420" r="4" fill="#a78bfa" opacity="0.5"/>
+  <!-- Sparkles -->
+  <circle cx="80"  cy="80"  r="8" fill="#a78bfa" opacity="0.6"/>
+  <circle cx="440" cy="70"  r="6" fill="#fb923c" opacity="0.6"/>
+  <circle cx="460" cy="440" r="7" fill="#fb923c" opacity="0.4"/>
+  <circle cx="55"  cy="430" r="5" fill="#a78bfa" opacity="0.5"/>
+  <circle cx="256" cy="460" r="5" fill="rgba(255,255,255,0.3)"/>
 </svg>

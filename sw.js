@@ -1,11 +1,15 @@
-// Quiz Ziyad — Service Worker v1
-const CACHE_NAME = 'quiz-ziyad-v1';
+// Quiz Family — Service Worker v2
+const CACHE_NAME = 'quiz-family-v2';
 
 const ASSETS = [
   './',
+  './accueil.html',
   './index.html',
   './decimaux.html',
   './science.html',
+  './elyes_maths.html',
+  './elyes_francais.html',
+  './elyes_sciences.html',
   './manifest.json',
   './icon.svg',
 ];
@@ -58,7 +62,7 @@ self.addEventListener('fetch', event => {
         .catch(() => {
           // Offline fallback: return index if navigating
           if (event.request.mode === 'navigate') {
-            return caches.match('./index.html');
+            return caches.match('./accueil.html');
           }
         });
     })

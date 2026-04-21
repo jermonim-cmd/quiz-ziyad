@@ -1,8 +1,8 @@
 {
-  "name": "Quiz Ziyad — Maths Sec 1",
-  "short_name": "Quiz Ziyad",
-  "description": "Quiz interactifs de géométrie et décimaux pour Secondaire 1 au Québec",
-  "start_url": "./index.html",
+  "name": "Quiz Family — Ziyad & Elyes",
+  "short_name": "Quiz Family",
+  "description": "Quiz interactifs pour Ziyad (Sec 1 Québec) et Elyes (3ème Brevet France)",
+  "start_url": "./accueil.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -27,17 +27,31 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Géométrie",
+      "name": "Ziyad — Géométrie",
       "short_name": "Géo",
       "description": "Quiz de géométrie Sec 1",
       "url": "./index.html",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
     },
     {
-      "name": "Décimaux",
+      "name": "Ziyad — Décimaux",
       "short_name": "Déc",
       "description": "Quiz de calcul décimal",
       "url": "./decimaux.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Elyes — Maths",
+      "short_name": "Maths",
+      "description": "Quiz de maths Brevet",
+      "url": "./elyes_maths.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Elyes — Français",
+      "short_name": "Français",
+      "description": "Quiz de français Brevet",
+      "url": "./elyes_francais.html",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]
