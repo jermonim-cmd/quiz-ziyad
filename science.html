@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SciQuiz — Sciences Sec 1 · Ziyad</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#059669">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quiz Ziyad">
+<link rel="apple-touch-icon" href="icon.svg">
+
+<style>
+:root {
+  --bg: #060f0b;
+  --card: #0d1f17;
+  --text: #d8f0e8;
+  --muted: #7a9a88;
+  --success: #10b981;
+  --error: #ef4444;
+  --acc: #059669;
+  --acc2: #34d399;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(5,150,105,.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(52,211,153,.07) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+.screen { position: relative; z-index: 1; min-height: 100vh; display: none; }
+.screen.active { display: block; }
+
+/* ── TOP NAV ── */
+.top-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: center; gap: 6px; padding: 10px 12px;
+  background: rgba(6,15,11,.88); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(5,150,105,.15);
+  flex-wrap: wrap;
+}
+.nav-tab {
+  padding: 6px 14px; border-radius: 20px; font-size: .82rem; font-weight: 600;
+  cursor: pointer; text-decoration: none; transition: all .2s; border: none; font-family: inherit;
+  white-space: nowrap;
+}
+.nav-tab.geo  { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); }
+.nav-tab.dec  { background: rgba(245,158,11,.12); color: #fcd34d; border: 1px solid rgba(245,158,11,.3); }
+.nav-tab.sci  { background: rgba(5,150,105,.22);  color: #6ee7b7; border: 1px solid rgba(5,150,105,.45); }
+.nav-tab.geo:hover  { background: rgba(124,58,237,.3); }
+.nav-tab.dec:hover  { background: rgba(245,158,11,.25); }
+.nav-tab.sci:hover  { background: rgba(5,150,105,.38); }
+
+/* ── HOME ── */
+.home-header { text-align: center; padding: 88px 20px 20px; }
+.home-header h1 {
+  font-size: clamp(2rem, 6vw, 3rem); font-weight: 900; letter-spacing: -1px;
+  background: linear-gradient(135deg, #6ee7b7 0%, #34d399 60%, #059669 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.home-header .sub { color: var(--muted); margin-top: 6px; font-size: 1rem; }
+.week-badge {
+  display: inline-block; margin-top: 14px;
+  background: rgba(5,150,105,.12); border: 1px solid rgba(5,150,105,.3);
+  border-radius: 20px; padding: 5px 18px; font-size: .8rem; color: #6ee7b7;
+}
+.topics-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(265px, 1fr));
+  gap: 16px; max-width: 960px; margin: 0 auto; padding: 16px 20px 60px;
+}
+.topic-card {
+  background: var(--card); border-radius: 18px; padding: 26px 24px;
+  cursor: pointer; border: 1px solid rgba(255,255,255,.05);
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+  position: relative; overflow: hidden;
+}
+.topic-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--tc, #059669);
+}
+.topic-card:hover {
+  transform: translateY(-5px); border-color: rgba(255,255,255,.12);
+  box-shadow: 0 24px 48px rgba(0,0,0,.4);
+}
+.tc-icon { font-size: 2.4rem; margin-bottom: 12px; }
+.tc-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+.tc-desc { color: var(--muted); font-size: .83rem; line-height: 1.5; }
+.tc-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 16px; font-size: .78rem; color: var(--muted);
+}
+.tc-score {
+  background: rgba(5,150,105,.18); border-radius: 12px;
+  padding: 2px 10px; color: #6ee7b7; font-weight: 600;
+}
+
+/* ── QUIZ ── */
+#quiz-screen { max-width: 720px; margin: 0 auto; padding: 80px 20px 60px; }
+.back-btn {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+  color: var(--text); padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; font-size: .9rem; margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 6px; transition: background .2s; font-family: inherit;
+}
+.back-btn:hover { background: rgba(255,255,255,.1); }
+.quiz-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; }
+.prog-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.prog-bar { flex: 1; height: 7px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg, #059669, #34d399); border-radius: 4px; transition: width .45s ease; }
+.prog-txt { font-size: .82rem; color: var(--muted); white-space: nowrap; }
+
+.q-card {
+  background: var(--card); border-radius: 20px; padding: 30px 28px;
+  border: 1px solid rgba(255,255,255,.05); margin-top: 22px;
+  animation: fadeUp .35s ease;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.q-num { font-size: .75rem; color: #34d399; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+.q-text { font-size: 1.1rem; font-weight: 500; line-height: 1.65; margin-bottom: 24px; }
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+@media (max-width: 480px) { .opts-grid { grid-template-columns: 1fr; } }
+
+.opt-btn {
+  background: rgba(255,255,255,.04); border: 2px solid rgba(255,255,255,.07);
+  border-radius: 12px; padding: 14px 16px; cursor: pointer; color: var(--text);
+  font-size: .95rem; text-align: left; display: flex; align-items: center;
+  gap: 12px; transition: background .18s, border-color .18s; font-family: inherit;
+}
+.opt-btn:hover:not(:disabled) {
+  background: rgba(5,150,105,.14); border-color: rgba(5,150,105,.45);
+}
+.opt-btn.correct { background: rgba(16,185,129,.14); border-color: #10b981; }
+.opt-btn.wrong   { background: rgba(239,68,68,.14);  border-color: #ef4444;  }
+.opt-btn:disabled { cursor: default; }
+.opt-letter {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,.08); display: flex; align-items: center;
+  justify-content: center; font-size: .82rem; font-weight: 700; min-width: 28px;
+}
+.opt-btn.correct .opt-letter { background: rgba(16,185,129,.3); }
+.opt-btn.wrong   .opt-letter { background: rgba(239,68,68,.3); }
+
+.feedback {
+  margin-top: 16px; padding: 14px 18px; border-radius: 12px;
+  font-size: .92rem; line-height: 1.55; animation: fadeUp .3s ease;
+}
+.feedback.ok  { background: rgba(16,185,129,.1);  border: 1px solid rgba(16,185,129,.3);  color: #6ee7b7; }
+.feedback.err { background: rgba(239,68,68,.1);   border: 1px solid rgba(239,68,68,.3);   color: #fca5a5; }
+.next-btn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  background: linear-gradient(135deg, #059669, #047857);
+  border: none; border-radius: 13px; color: #fff;
+  font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: opacity .2s, transform .2s;
+}
+.next-btn:hover { opacity: .9; transform: translateY(-1px); }
+
+/* ── RESULTS ── */
+#results-screen { max-width: 620px; margin: 0 auto; padding: 80px 20px 60px; }
+.res-top { text-align: center; padding: 20px 0 28px; }
+.score-wrap { position: relative; width: 150px; height: 150px; margin: 0 auto 22px; }
+.score-svg { transform: rotate(-90deg); }
+.score-bg  { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 12; }
+.score-arc { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.score-inner {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.score-num { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+.score-den { font-size: .85rem; color: var(--muted); }
+.res-msg { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+.res-sub { color: var(--muted); margin-bottom: 30px; }
+
+.review-list { display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; }
+.rev-item {
+  background: var(--card); border-radius: 13px; padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.05); display: flex; gap: 12px; align-items: flex-start;
+}
+.rev-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.rev-q { font-size: .88rem; margin-bottom: 4px; line-height: 1.4; }
+.rev-a { font-size: .8rem; }
+.ok-ans  { color: #10b981; }
+.err-ans { color: #ef4444; }
+
+.res-actions { display: flex; flex-direction: column; gap: 11px; }
+.act-btn {
+  padding: 14px; border-radius: 13px; font-size: 1rem; font-weight: 700;
+  cursor: pointer; border: none; font-family: inherit; transition: opacity .2s, transform .2s; width: 100%;
+}
+.act-btn:hover { opacity: .9; transform: translateY(-1px); }
+.act-primary   { background: linear-gradient(135deg, #059669, #047857); color: #fff; }
+.act-secondary { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: var(--text); }
+
+.conf { position: fixed; border-radius: 3px; animation: fall linear forwards; z-index: 9999; pointer-events: none; }
+@keyframes fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <a href="index.html"    class="nav-tab geo">📐 Géométrie</a>
+  <a href="decimaux.html" class="nav-tab dec">🔢 Décimaux</a>
+  <span                   class="nav-tab sci">🔬 Sciences</span>
+</nav>
+
+<!-- HOME -->
+<div id="home-screen" class="screen active">
+  <div class="home-header">
+    <h1>🔬 SciQuiz</h1>
+    <p class="sub">Sciences et technologie · Secondaire 1 · Québec</p>
+    <div class="week-badge" id="week-badge"></div>
+  </div>
+  <div class="topics-grid" id="topics-grid"></div>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz-screen" class="screen">
+  <button class="back-btn" onclick="goHome()">← Accueil</button>
+  <div class="quiz-title" id="quiz-title"></div>
+  <div class="prog-row">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="prog-txt" id="prog-txt"></span>
+  </div>
+  <div id="q-container"></div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-screen" class="screen">
+  <div class="res-top">
+    <div class="score-wrap">
+      <svg class="score-svg" width="150" height="150" viewBox="0 0 150 150">
+        <circle class="score-bg" cx="75" cy="75" r="60"/>
+        <circle class="score-arc" id="score-arc" cx="75" cy="75" r="60"
+          stroke="#059669" stroke-dasharray="377" stroke-dashoffset="377"/>
+      </svg>
+      <div class="score-inner">
+        <div class="score-num" id="score-num">0</div>
+        <div class="score-den">sur 10</div>
+      </div>
+    </div>
+    <div class="res-msg" id="res-msg"></div>
+    <div class="res-sub" id="res-sub"></div>
+  </div>
+  <div class="review-list" id="review-list"></div>
+  <div class="res-actions">
+    <button class="act-btn act-primary"   onclick="retryQuiz()">🔄 Recommencer ce quiz</button>
+    <button class="act-btn act-secondary" onclick="goHome()">🏠 Choisir un autre sujet</button>
+  </div>
+</div>
+
+<script>
+// ─── RNG ─────────────────────────────────────────────────────
+function SRNG(seed) {
+  let s = seed >>> 0;
+  this.next = () => { s = Math.imul(1664525, s) + 1013904223 >>> 0; return s / 0x100000000; };
+  this.int  = n => Math.floor(this.next() * n);
+  this.shuffle = a => {
+    const r = [...a];
+    for (let i = r.length - 1; i > 0; i--) { const j = this.int(i+1); [r[i],r[j]]=[r[j],r[i]]; }
+    return r;
+  };
+  this.pick = (a, n) => this.shuffle(a).slice(0, n);
+}
+function weekLabel() {
+  const d = new Date(), jan = new Date(d.getFullYear(), 0, 1);
+  return `Semaine ${Math.floor((d - jan) / 86400000 / 7) + 1} · ${d.getFullYear()}`;
+}
+
+// ─── BANQUE DE QUESTIONS ──────────────────────────────────────
+const TOPICS = [
+
+  // ════════════════════════════════════════════════════════════
+  {
+    id: 'matiere', name: 'Matière et états', icon: '🧪', color: '#7c3aed',
+    desc: 'États de la matière, changements d\'état et propriétés physiques',
+    qs: [
+      { q:'Quel est l\'état de la matière dont la forme s\'adapte au contenant mais dont le volume est fixe?',
+        o:['Solide','Liquide','Gaz','Plasma'], a:'Liquide',
+        e:'Le liquide prend la forme de son contenant mais conserve toujours le même volume.' },
+      { q:'La transformation de l\'eau liquide en vapeur d\'eau s\'appelle…',
+        o:['Fusion','Solidification','Vaporisation','Condensation'], a:'Vaporisation',
+        e:'La vaporisation (ébullition ou évaporation) est le passage de l\'état liquide à l\'état gazeux.' },
+      { q:'La glace qui fond se transforme de… à…',
+        o:['Liquide à solide','Solide à liquide','Gaz à liquide','Liquide à gaz'], a:'Solide à liquide',
+        e:'La fusion est le changement d\'état de solide à liquide. La glace fond à 0 °C.' },
+      { q:'À quelle température l\'eau bout-elle à pression normale?',
+        o:['0 °C','50 °C','100 °C','37 °C'], a:'100 °C',
+        e:'Le point d\'ébullition de l\'eau est 100 °C à pression atmosphérique normale (101,3 kPa).' },
+      { q:'La densité d\'un objet se calcule avec la formule…',
+        o:['masse + volume','masse × volume','masse ÷ volume','volume ÷ masse'], a:'masse ÷ volume',
+        e:'Densité (d) = masse (m) ÷ volume (V). Elle s\'exprime souvent en g/mL ou en g/cm³.' },
+      { q:'La densité de l\'eau est de 1 g/mL. Un objet de densité 0,7 g/mL va…',
+        o:['Couler','Flotter','Se dissoudre','Aucun changement'], a:'Flotter',
+        e:'Un objet flotte si sa densité est inférieure à celle du liquide. 0,7 < 1, donc il flotte.' },
+      { q:'La condensation est le passage de…',
+        o:['Solide à liquide','Liquide à gaz','Gaz à liquide','Solide à gaz'], a:'Gaz à liquide',
+        e:'La condensation est le passage de l\'état gazeux à l\'état liquide. Ex.: buée sur un miroir.' },
+      { q:'La sublimation est le passage direct de…',
+        o:['Liquide à gaz','Solide à gaz','Gaz à solide','Solide à liquide'], a:'Solide à gaz',
+        e:'La sublimation est le changement d\'état direct du solide au gaz, sans passer par l\'état liquide.' },
+      { q:'Lors d\'un changement d\'état, la masse d\'une substance…',
+        o:['Augmente','Diminue','Reste la même','Varie selon la température'], a:'Reste la même',
+        e:'La masse est conservée lors des changements d\'état. Seul l\'arrangement des molécules change.' },
+      { q:'Quelle propriété d\'un solide le distingue d\'un liquide?',
+        o:['Le solide n\'a pas de masse','Le solide a une forme définie','Le solide est transparent','Le solide flotte toujours'], a:'Le solide a une forme définie',
+        e:'Un solide conserve sa forme et son volume, contrairement au liquide qui prend la forme de son contenant.' },
+      { q:'Un gaz remplit…',
+        o:['La moitié de son contenant','Seulement le bas du contenant','Tout l\'espace disponible du contenant','Un volume fixe'], a:'Tout l\'espace disponible du contenant',
+        e:'Un gaz n\'a ni forme ni volume propre : il se répand et occupe tout le volume de son contenant.' },
+      { q:'La solidification est le passage de…',
+        o:['Solide à liquide','Gaz à solide','Liquide à solide','Gaz à liquide'], a:'Liquide à solide',
+        e:'La solidification est le changement d\'état de liquide à solide. Ex.: l\'eau qui gèle à 0 °C.' },
+      { q:'Vrai ou faux : La température reste constante pendant un changement d\'état.',
+        o:['Vrai','Faux'], a:'Vrai',
+        e:'Pendant un changement d\'état, toute l\'énergie absorbée ou libérée sert à changer l\'état, pas à modifier la température.' },
+      { q:'Quelle propriété physique est intensive (ne dépend pas de la quantité)?',
+        o:['La masse','Le volume','La densité','L\'aire'], a:'La densité',
+        e:'La densité est une propriété intensive : elle est la même quelle que soit la quantité de matière. La masse et le volume sont extensifs.' },
+      { q:'Une roche a une masse de 45 g et un volume de 15 cm³. Quelle est sa densité?',
+        o:['3 g/cm³','0,33 g/cm³','60 g/cm³','675 g/cm³'], a:'3 g/cm³',
+        e:'d = m ÷ V = 45 ÷ 15 = 3 g/cm³.' },
+      { q:'La vapeur d\'eau qui se dépose directement en givre sur une surface froide, c\'est…',
+        o:['La condensation','La solidification','La déposition (givrage)','La sublimation'], a:'La déposition (givrage)',
+        e:'La déposition est le passage direct de l\'état gazeux à l\'état solide. C\'est l\'inverse de la sublimation.' },
+      { q:'Parmi ces propriétés, laquelle est une propriété CHIMIQUE?',
+        o:['La couleur','La densité','La combustibilité','Le point de fusion'], a:'La combustibilité',
+        e:'La combustibilité est une propriété chimique (capacité à brûler). La couleur, la densité et le point de fusion sont des propriétés physiques.' },
+      { q:'Lors de la vaporisation, la matière absorbe ou libère de l\'énergie?',
+        o:['Libère','Absorbe','Ne change pas d\'énergie','Cela dépend de la matière'], a:'Absorbe',
+        e:'Le passage liquide → gaz nécessite de l\'énergie (chaleur latente de vaporisation). La matière absorbe de la chaleur.' },
+      { q:'L\'huile a une densité de 0,92 g/mL. L\'huile et l\'eau (1 g/mL) se mélangent-elles?',
+        o:['Oui, elles se mélangent complètement','Non, l\'huile flotte sur l\'eau','Non, l\'eau flotte sur l\'huile','Elles se dissolvent'], a:'Non, l\'huile flotte sur l\'eau',
+        e:'L\'huile et l\'eau ne se mélangent pas (non miscibles). Comme d_huile < d_eau, l\'huile flotte au-dessus de l\'eau.' },
+      { q:'Quelle est l\'unité SI de la densité?',
+        o:['g','mL','g/mL ou kg/m³','cm³'], a:'g/mL ou kg/m³',
+        e:'La densité s\'exprime en g/mL (ou g/cm³) en chimie, et en kg/m³ en physique (SI).' },
+      { q:'Le point de fusion du fer est 1 538 °C. Cela signifie que le fer…',
+        o:['Bout à 1 538 °C','Devient liquide à 1 538 °C','Se vaporise à 1 538 °C','Brûle à 1 538 °C'], a:'Devient liquide à 1 538 °C',
+        e:'Le point de fusion est la température à laquelle un solide devient liquide. Le fer fond à 1 538 °C.' },
+      { q:'Vrai ou faux : Le volume d\'un gaz est fixe comme celui d\'un solide.',
+        o:['Vrai','Faux'], a:'Faux',
+        e:'Un gaz n\'a pas de volume propre : il occupe tout le volume de son contenant. Seul le solide a un volume ET une forme définis.' },
+      { q:'Un cube de glace de 10 g fond complètement. La masse d\'eau liquide obtenue est…',
+        o:['Moins de 10 g','10 g','Plus de 10 g','0 g'], a:'10 g',
+        e:'La masse est conservée lors des changements d\'état. 10 g de glace → 10 g d\'eau liquide.' }
+    ]
+  },
+
+  // ════════════════════════════════════════════════════════════
+  {
+    id: 'melanges', name: 'Mélanges et substances pures', icon: '🔬', color: '#0891b2',
+    desc: 'Substances pures, mélanges homogènes et hétérogènes, solutions',
+    qs: [
+      { q:'Une substance pure est composée…',
+        o:['De plusieurs types de molécules','D\'un seul type de particules (atomes ou molécules)','Toujours de deux éléments','D\'eau uniquement'], a:'D\'un seul type de particules (atomes ou molécules)',
+        e:'Une substance pure contient un seul type de particules. Ex. : eau (H₂O), or (Au), oxygène (O₂).' },
+      { q:'L\'eau salée est un exemple de…',
+        o:['Substance pure','Mélange hétérogène','Mélange homogène (solution)','Composé insoluble'], a:'Mélange homogène (solution)',
+        e:'Le sel se dissout dans l\'eau et forme une solution (mélange homogène). On ne peut pas distinguer le sel à l\'œil nu.' },
+      { q:'Dans un mélange hétérogène, on peut…',
+        o:['Voir une seule phase','Voir les composants distincts','Toujours filtrer facilement','Ne jamais séparer les composants'], a:'Voir les composants distincts',
+        e:'Un mélange hétérogène a plusieurs phases visibles. Ex. : vinaigrette (huile + vinaigre), béton, granola.' },
+      { q:'Dans la solution eau + sucre, l\'eau est le… et le sucre est le…',
+        o:['Solvant / soluté','Soluté / solvant','Mélange / substance','Solution / composé'], a:'Solvant / soluté',
+        e:'Le solvant est la substance qui dissout (l\'eau). Le soluté est la substance dissoute (le sucre).' },
+      { q:'La vinaigrette (huile + vinaigre) est un mélange…',
+        o:['Homogène','Hétérogène','Substance pure','Solution'], a:'Hétérogène',
+        e:'L\'huile et le vinaigre ne se mélangent pas complètement : on voit deux phases séparées → mélange hétérogène.' },
+      { q:'Comment peut-on séparer le sable de l\'eau?',
+        o:['Distillation','Décantation','Filtration','Chromatographie'], a:'Filtration',
+        e:'Le sable ne se dissout pas dans l\'eau. Un filtre retient le sable et laisse passer l\'eau.' },
+      { q:'Comment sépare-t-on le sel dissous dans l\'eau?',
+        o:['Filtration','Distillation ou évaporation','Décantation','Tamisage'], a:'Distillation ou évaporation',
+        e:'Puisque le sel est dissous, on ne peut pas le filtrer. L\'évaporation de l\'eau laisse le sel, ou la distillation récupère l\'eau pure.' },
+      { q:'L\'air est un mélange…',
+        o:['Hétérogène','Homogène','Substance pure','Composé'], a:'Homogène',
+        e:'L\'air est un mélange homogène de gaz (azote ~78%, oxygène ~21%, argon, CO₂…). Chaque partie de l\'air a la même composition.' },
+      { q:'Vrai ou faux : Une solution est toujours liquide.',
+        o:['Vrai','Faux'], a:'Faux',
+        e:'Une solution peut être liquide (eau + sel), gazeuse (air) ou solide (alliage comme le bronze = cuivre + étain).' },
+      { q:'Le granite (roche composée de plusieurs minéraux) est…',
+        o:['Une substance pure','Un mélange homogène','Un mélange hétérogène','Une solution'], a:'Un mélange hétérogène',
+        e:'Le granite est composé de plusieurs minéraux (quartz, feldspath, mica) visibles à l\'œil nu → mélange hétérogène.' },
+      { q:'La solubilité est…',
+        o:['La capacité d\'une substance à flotter','La quantité maximale de soluté qu\'on peut dissoudre dans un solvant','La vitesse de dissolution','La couleur d\'une solution'], a:'La quantité maximale de soluté qu\'on peut dissoudre dans un solvant',
+        e:'La solubilité indique combien de grammes de soluté peuvent se dissoudre dans 100 mL de solvant à une température donnée.' },
+      { q:'Quand on ajoute plus de sucre qu\'il ne peut se dissoudre, la solution est…',
+        o:['Diluée','Saturée','Homogène','Non miscible'], a:'Saturée',
+        e:'Une solution saturée a atteint sa solubilité maximale : le soluté ne peut plus se dissoudre et reste visible au fond.' },
+      { q:'La température affecte la solubilité : en général, chauffer l\'eau…',
+        o:['Diminue la solubilité des solides','Augmente la solubilité des solides','N\'a aucun effet','Solidifie le soluté'], a:'Augmente la solubilité des solides',
+        e:'Pour la plupart des solides, la solubilité augmente avec la température. C\'est pourquoi le sucre se dissout mieux dans l\'eau chaude.' },
+      { q:'Le lait est considéré comme un mélange…',
+        o:['Homogène','Hétérogène (colloïde)','Substance pure','Solution idéale'], a:'Hétérogène (colloïde)',
+        e:'Le lait est un colloïde (type de mélange hétérogène où les particules sont très petites mais en suspension). Il paraît homogène mais l\'est pas vraiment.' },
+      { q:'Quelle méthode sépare deux liquides non miscibles (ex. huile et eau)?',
+        o:['Filtration','Évaporation','Décantation','Tamisage'], a:'Décantation',
+        e:'La décantation laisse les deux liquides se séparer par densité (l\'huile monte, l\'eau reste en bas). On peut ensuite vider une couche.' },
+      { q:'L\'eau distillée est…',
+        o:['Un mélange','Une substance pure','Une solution','Un alliage'], a:'Une substance pure',
+        e:'L\'eau distillée (H₂O pur) est une substance pure car elle ne contient qu\'un seul type de molécule.' },
+      { q:'Vrai ou faux : Tous les mélanges homogènes sont des solutions liquides.',
+        o:['Vrai','Faux'], a:'Faux',
+        e:'Un mélange homogène peut être gazeux (ex. air), liquide (ex. eau sucrée) ou solide (ex. alliages métalliques).' },
+      { q:'Le bronze est un alliage de cuivre et d\'étain. C\'est…',
+        o:['Une substance pure','Un mélange homogène solide','Un mélange hétérogène','Un composé chimique'], a:'Un mélange homogène solide',
+        e:'Un alliage est un mélange homogène de métaux (solide). Le bronze a une composition uniforme partout.' },
+      { q:'Quelle technique utilise-t-on pour séparer les pigments d\'une encre?',
+        o:['Distillation','Filtration','Chromatographie','Décantation'], a:'Chromatographie',
+        e:'La chromatographie sépare les composants d\'un mélange selon leur vitesse de déplacement dans un solvant. On l\'utilise pour séparer les couleurs d\'une encre.' },
+      { q:'L\'oxygène (O₂) est une…',
+        o:['Substance pure (élément)','Solution','Mélange hétérogène','Substance composée'], a:'Substance pure (élément)',
+        e:'L\'oxygène (O₂) est une substance pure de type élément car il est composé d\'un seul type d\'atome (O).' },
+      { q:'L\'eau (H₂O) est une substance pure de type…',
+        o:['Élément','Composé','Mélange','Solution'], a:'Composé',
+        e:'L\'eau est un composé car ses molécules contiennent 2 types d\'atomes différents (H et O), toujours dans le même ratio.' },
+      { q:'Si on dissout 20 g de sel dans 100 mL d\'eau, quelle est la masse totale de la solution?',
+        o:['100 g','80 g','120 g','20 g'], a:'120 g',
+        e:'La masse se conserve lors de la dissolution : m(solution) = m(solvant) + m(soluté) = 100 g + 20 g = 120 g.' }
+    ]
+  },
+
+  // ════════════════════════════════════════════════════════════
+  {
+    id: 'cellules', name: 'Cellules et êtres vivants', icon: '🧬', color: '#dc2626',
+    desc: 'Caractéristiques du vivant, cellule animale et végétale, classification',
+    qs: [
+      { q:'Quelle est la plus petite unité de base de tout être vivant?',
+        o:['L\'atome','La molécule','La cellule','Le tissu'], a:'La cellule',
+        e:'La cellule est la plus petite unité structurale et fonctionnelle du vivant. Tout être vivant est composé d\'au moins une cellule.' },
+      { q:'Quel organite est responsable de la photosynthèse dans les cellules végétales?',
+        o:['La mitochondrie','Le noyau','Le chloroplaste','La membrane'], a:'Le chloroplaste',
+        e:'Le chloroplaste contient la chlorophylle (pigment vert) et réalise la photosynthèse en captant la lumière.' },
+      { q:'Quelle structure est présente dans la cellule végétale mais ABSENTE dans la cellule animale?',
+        o:['La membrane cellulaire','Le noyau','La paroi cellulaire','Le cytoplasme'], a:'La paroi cellulaire',
+        e:'La paroi cellulaire (en cellulose) est propre aux cellules végétales. Elle donne rigidité et protection. Les cellules animales n\'en ont pas.' },
+      { q:'Quel organite contient l\'ADN et dirige les activités de la cellule?',
+        o:['La mitochondrie','Le noyau','Le chloroplaste','La vacuole'], a:'Le noyau',
+        e:'Le noyau est le "cerveau" de la cellule. Il contient l\'ADN (information génétique) et contrôle toutes les activités cellulaires.' },
+      { q:'Les mitochondries sont les organites où se produit…',
+        o:['La photosynthèse','La respiration cellulaire','La division cellulaire','La synthèse des protéines'], a:'La respiration cellulaire',
+        e:'Les mitochondries produisent l\'énergie (ATP) dont la cellule a besoin par la respiration cellulaire. On les appelle "centrale énergétique".' },
+      { q:'Lequel de ces organismes est unicellulaire?',
+        o:['Le chien','La bactérie','La tulipe','Le champignon de Paris'], a:'La bactérie',
+        e:'Les bactéries sont des organismes unicellulaires (une seule cellule). Les chiens, tulipes et champignons de Paris sont multicellulaires.' },
+      { q:'Les bactéries sont des organismes…',
+        o:['Eucaryotes (avec noyau)','Procaryotes (sans noyau membraneux)','Multicellulaires','Végétaux'], a:'Procaryotes (sans noyau membraneux)',
+        e:'Les bactéries sont procaryotes : leur matériel génétique n\'est pas entouré d\'une membrane nucléaire. Elles sont toujours unicellulaires.' },
+      { q:'La photosynthèse se résume par : CO₂ + H₂O + lumière → ?',
+        o:['CO₂ + H₂O','Glucose + CO₂','Glucose + O₂','O₂ + CO₂'], a:'Glucose + O₂',
+        e:'La photosynthèse : 6CO₂ + 6H₂O + lumière → C₆H₁₂O₆ (glucose) + 6O₂. Les plantes produisent du glucose ET libèrent de l\'oxygène.' },
+      { q:'Laquelle de ces caractéristiques N\'appartient PAS aux êtres vivants?',
+        o:['Reproduction','Nutrition','Croissance','Conduction électrique'], a:'Conduction électrique',
+        e:'Les 7 caractéristiques des êtres vivants : nutrition, respiration, excrétion, reproduction, croissance, mouvement, sensibilité. La conduction électrique n\'en fait pas partie.' },
+      { q:'La membrane cellulaire permet…',
+        o:['La photosynthèse','Les échanges entre la cellule et son milieu','La production d\'énergie','La reproduction'], a:'Les échanges entre la cellule et son milieu',
+        e:'La membrane cellulaire est semi-perméable : elle contrôle ce qui entre et sort de la cellule (nutriments, déchets, eau).' },
+      { q:'Les végétaux sont des organismes…',
+        o:['Hétérotrophes','Autotrophes','Décomposeurs','Carnivores'], a:'Autotrophes',
+        e:'Les végétaux sont autotrophes : ils fabriquent eux-mêmes leur nourriture (glucose) grâce à la photosynthèse.' },
+      { q:'Les champignons (fungi) se nourrissent par…',
+        o:['Photosynthèse','Prédation','Absorption de matière organique','Chimiosynthèse'], a:'Absorption de matière organique',
+        e:'Les champignons sont des décomposeurs hétérotrophes : ils sécrètent des enzymes pour décomposer la matière organique et l\'absorber.' },
+      { q:'Vrai ou faux : Les virus sont des êtres vivants.',
+        o:['Vrai','Faux'], a:'Faux',
+        e:'Les virus ne sont pas des êtres vivants : ils n\'ont pas de cellule, ne peuvent pas se reproduire seuls et n\'ont pas de métabolisme.' },
+      { q:'La chlorophylle est le pigment qui donne aux plantes leur couleur…',
+        o:['Rouge','Jaune','Verte','Bleue'], a:'Verte',
+        e:'La chlorophylle absorbe la lumière rouge et bleue, et réfléchit la lumière verte. C\'est pourquoi les feuilles sont vertes.' },
+      { q:'La vacuole centrale dans les cellules végétales sert principalement à…',
+        o:['Produire l\'énergie','Stocker l\'eau et maintenir la turgescence','Réaliser la photosynthèse','Contenir l\'ADN'], a:'Stocker l\'eau et maintenir la turgescence',
+        e:'La grande vacuole centrale des cellules végétales stocke l\'eau, les sucres et les déchets. Elle maintient la rigidité (turgescence) de la plante.' },
+      { q:'Dans la classification des êtres vivants, les humains appartiennent au règne…',
+        o:['Végétal','Fungi','Animal','Protiste'], a:'Animal',
+        e:'Les humains (Homo sapiens) appartiennent au règne animal : multicellulaires, eucaryotes, hétérotrophes, sans paroi cellulaire.' },
+      { q:'Les ribosomes servent à…',
+        o:['Stocker l\'énergie','Fabriquer des protéines','Réaliser la photosynthèse','Protéger la cellule'], a:'Fabriquer des protéines',
+        e:'Les ribosomes sont de petits organites présents dans toutes les cellules (procaryotes et eucaryotes) qui synthétisent les protéines.' },
+      { q:'Quel est le rôle principal de la respiration cellulaire?',
+        o:['Éliminer le CO₂','Produire de l\'énergie (ATP) à partir du glucose','Fabriquer du glucose','Absorber l\'oxygène'], a:'Produire de l\'énergie (ATP) à partir du glucose',
+        e:'La respiration cellulaire : glucose + O₂ → CO₂ + H₂O + énergie (ATP). Les mitochondries réalisent ce processus.' },
+      { q:'Vrai ou faux : Toutes les cellules d\'un organisme multicellulaire sont identiques.',
+        o:['Vrai','Faux'], a:'Faux',
+        e:'Dans un organisme multicellulaire, les cellules se spécialisent (différenciation cellulaire). Ex. : cellules musculaires, nerveuses, sanguines — toutes différentes.' },
+      { q:'Quelle est la différence principale entre une cellule animale et une cellule végétale?',
+        o:['La cellule animale a un noyau, pas la végétale','La cellule végétale a une paroi, des chloroplastes et une grande vacuole','La cellule animale fait la photosynthèse','La cellule végétale n\'a pas de membrane'], a:'La cellule végétale a une paroi, des chloroplastes et une grande vacuole',
+        e:'Les trois différences majeures des cellules végétales : paroi cellulosique, chloroplastes (photosynthèse) et grande vacuole centrale.' },
+      { q:'L\'excrétion chez les êtres vivants est…',
+        o:['La production d\'énergie','L\'élimination des déchets métaboliques','La digestion des aliments','La reproduction'], a:'L\'élimination des déchets métaboliques',
+        e:'L\'excrétion est l\'élimination des déchets produits par le métabolisme (urine, sueur, CO₂ expiré). C\'est une des 7 caractéristiques du vivant.' },
+      { q:'Combien de règnes y a-t-il dans la classification traditionnelle des êtres vivants (5 règnes)?',
+        o:['3','4','5','7'], a:'5',
+        e:'Les 5 règnes : Monères (bactéries), Protistes, Fungi (champignons), Végétaux (Plantae), Animaux (Animalia).' }
+    ]
+  },
+
+  // ════════════════════════════════════════════════════════════
+  {
+    id: 'ecosystemes', name: 'Écosystèmes', icon: '🌱', color: '#059669',
+    desc: 'Chaînes alimentaires, facteurs biotiques/abiotiques, biodiversité',
+    qs: [
+      { q:'Dans une chaîne alimentaire, les producteurs sont…',
+        o:['Les carnivores','Les végétaux (plantes)','Les décomposeurs','Les champignons'], a:'Les végétaux (plantes)',
+        e:'Les producteurs (végétaux) fabriquent leur propre matière organique par photosynthèse. Ils sont la base de toutes les chaînes alimentaires.' },
+      { q:'Herbe → Lapin → Renard. Dans cette chaîne, le lapin est un…',
+        o:['Producteur','Consommateur primaire','Consommateur secondaire','Décomposeur'], a:'Consommateur primaire',
+        e:'Le lapin mange l\'herbe (producteur) → il est consommateur primaire (1er ordre). Le renard est consommateur secondaire.' },
+      { q:'Les décomposeurs jouent le rôle de…',
+        o:['Producteurs de la chaîne','Transformateurs de matière organique morte en sels minéraux','Prédateurs principaux','Symbiontes'], a:'Transformateurs de matière organique morte en sels minéraux',
+        e:'Les décomposeurs (bactéries, champignons) décomposent la matière organique morte et libèrent des sels minéraux réutilisables par les plantes.' },
+      { q:'Les facteurs abiotiques d\'un écosystème sont…',
+        o:['Les animaux et les plantes','Les éléments non vivants (eau, lumière, température, sol)','Seulement les microorganismes','Les chaînes alimentaires'], a:'Les éléments non vivants (eau, lumière, température, sol)',
+        e:'Abiotique = non vivant. Les facteurs abiotiques : lumière, température, eau, sol, pH, vent, etc. Les facteurs biotiques = êtres vivants.' },
+      { q:'Un écosystème est l\'ensemble…',
+        o:['De tous les animaux d\'une région','Des êtres vivants + leur milieu physique','Des plantes d\'une forêt','Des chaînes alimentaires seulement'], a:'Des êtres vivants + leur milieu physique',
+        e:'Un écosystème = la communauté des êtres vivants (biocénose) + leur milieu physique (biotope), en interaction.' },
+      { q:'La chaîne alimentaire : algue → crevette → poisson → requin. Le poisson est un consommateur…',
+        o:['Primaire','Secondaire','Tertiaire','Quaternaire'], a:'Secondaire',
+        e:'Algue (producteur) → Crevette (cons. primaire) → Poisson (cons. secondaire) → Requin (cons. tertiaire).' },
+      { q:'Vrai ou faux : Environ 90 % de l\'énergie est perdue à chaque niveau d\'une chaîne alimentaire.',
+        o:['Vrai','Faux'], a:'Vrai',
+        e:'Règle des 10 % : seulement 10 % de l\'énergie d\'un niveau trophique passe au niveau suivant. Les 90 % restants sont perdus en chaleur, mouvement, déchets.' },
+      { q:'La biodiversité désigne…',
+        o:['Le nombre d\'espèces dans un milieu','Le poids total des êtres vivants','La quantité d\'eau d\'un écosystème','Le nombre de chaînes alimentaires'], a:'Le nombre d\'espèces dans un milieu',
+        e:'La biodiversité (diversité biologique) est la variété des espèces vivantes dans un écosystème. Elle inclut aussi la diversité génétique et des écosystèmes.' },
+      { q:'Un herbivore est un animal qui…',
+        o:['Mange des animaux','Mange des plantes','Mange des champignons','Mange tout'], a:'Mange des plantes',
+        e:'Herbivore = mange des végétaux. Ex. : lapin, vache, chenille. C\'est toujours un consommateur primaire.' },
+      { q:'La relation de prédation est une relation où…',
+        o:['Les deux espèces bénéficient','Une espèce tue et mange une autre','Une espèce vit aux dépens de l\'autre sans la tuer','Les deux espèces se concurrencent'], a:'Une espèce tue et mange une autre',
+        e:'La prédation : le prédateur chasse et consomme la proie. Ex. : le renard (prédateur) mange le lapin (proie).' },
+      { q:'La symbiose est une relation entre deux espèces où…',
+        o:['Les deux bénéficient (mutualisme)','L\'une profite, l\'autre est neutre','L\'une profite, l\'autre souffre','Les deux souffrent'], a:'Les deux bénéficient (mutualisme)',
+        e:'La symbiose (mutualisme) profite aux deux espèces. Ex. : les abeilles pollinisent les fleurs et obtiennent du nectar en échange.' },
+      { q:'Qu\'est-ce qu\'un réseau trophique?',
+        o:['Une seule chaîne alimentaire','L\'ensemble des chaînes alimentaires interconnectées d\'un écosystème','Le cycle de l\'eau','La liste des producteurs'], a:'L\'ensemble des chaînes alimentaires interconnectées d\'un écosystème',
+        e:'Un réseau trophique est plus complexe qu\'une chaîne alimentaire : il montre toutes les relations alimentaires entre les espèces d\'un écosystème.' },
+      { q:'Un parasite est un organisme qui…',
+        o:['Tue immédiatement son hôte','Vit aux dépens de son hôte sans le tuer tout de suite','Bénéficie à son hôte','Vit indépendamment'], a:'Vit aux dépens de son hôte sans le tuer tout de suite',
+        e:'Le parasitisme : le parasite bénéficie aux dépens de l\'hôte (qui en souffre mais ne meurt pas forcément rapidement). Ex. : tique, pou, ténia.' },
+      { q:'La déforestation entraîne principalement…',
+        o:['Une augmentation de la biodiversité','Une diminution de la biodiversité','Aucun effet sur l\'écosystème','Une amélioration du cycle de l\'eau'], a:'Une diminution de la biodiversité',
+        e:'La déforestation détruit des habitats, ce qui entraîne la disparition d\'espèces et une perte de biodiversité. Elle perturbe également le cycle du carbone et de l\'eau.' },
+      { q:'Qu\'est-ce que la niche écologique d\'une espèce?',
+        o:['Son habitat physique','Son rôle et sa place dans l\'écosystème','Sa position dans la chaîne alimentaire uniquement','Son territoire de chasse'], a:'Son rôle et sa place dans l\'écosystème',
+        e:'La niche écologique englobe le rôle de l\'espèce (ce qu\'elle mange, ce qui la mange), son habitat, son mode de vie, ses interactions.' },
+      { q:'La photosynthèse contribue au cycle du carbone en…',
+        o:['Libérant du CO₂ dans l\'atmosphère','Absorbant le CO₂ de l\'atmosphère','Produisant du méthane','Consommant de l\'O₂'], a:'Absorbant le CO₂ de l\'atmosphère',
+        e:'Les plantes absorbent le CO₂ atmosphérique lors de la photosynthèse et le transforment en glucose. Elles sont donc des "puits de carbone".' },
+      { q:'Dans la chaîne : phytoplancton → zooplancton → hareng → thon, quelle est la source d\'énergie originelle?',
+        o:['Le thon','Le hareng','Le Soleil (via la photosynthèse)','L\'eau de mer'], a:'Le Soleil (via la photosynthèse)',
+        e:'Toute l\'énergie des chaînes alimentaires provient initialement du Soleil, capté par les producteurs (phytoplancton ici) lors de la photosynthèse.' },
+      { q:'Vrai ou faux : Un omnivore peut être à la fois consommateur primaire et secondaire.',
+        o:['Vrai','Faux'], a:'Vrai',
+        e:'Un omnivore mange des plantes ET des animaux. Il est consommateur primaire quand il mange des plantes, secondaire (ou plus) quand il mange des herbivores.' },
+      { q:'Quel facteur biotique peut limiter la croissance d\'une population?',
+        o:['La température','La lumière disponible','La prédation','La quantité de pluie'], a:'La prédation',
+        e:'La prédation est un facteur biotique (vivant) qui limite la croissance des proies. Les facteurs abiotiques incluent température, lumière, eau.' },
+      { q:'La compétition interspécifique est une compétition entre…',
+        o:['Individus de la même espèce','Espèces différentes pour les mêmes ressources','Prédateurs et proies','Parasites et hôtes'], a:'Espèces différentes pour les mêmes ressources',
+        e:'La compétition interspécifique oppose des espèces différentes qui utilisent les mêmes ressources. La compétition intraspécifique oppose des individus de la même espèce.' },
+      { q:'Le cycle de l\'eau inclut lequel de ces processus?',
+        o:['Photosynthèse uniquement','Évaporation, condensation et précipitation','Respiration cellulaire uniquement','Décomposition'], a:'Évaporation, condensation et précipitation',
+        e:'Le cycle de l\'eau : évaporation (eau → vapeur), condensation (vapeur → nuages), précipitation (pluie, neige), ruissellement et infiltration.' }
+    ]
+  },
+
+  // ════════════════════════════════════════════════════════════
+  {
+    id: 'forces', name: 'Forces et machines simples', icon: '⚙️', color: '#d97706',
+    desc: 'Types de forces, machines simples et transformations d\'énergie',
+    qs: [
+      { q:'L\'unité de mesure d\'une force est…',
+        o:['Le kilogramme (kg)','Le newton (N)','Le joule (J)','Le watt (W)'], a:'Le newton (N)',
+        e:'La force se mesure en newtons (N), en hommage à Isaac Newton. L\'instrument de mesure est le dynamomètre.' },
+      { q:'La force gravitationnelle attire les objets vers…',
+        o:['Le ciel','Le Soleil','Le centre de la Terre','Le pôle Nord'], a:'Le centre de la Terre',
+        e:'La gravité est une force d\'attraction qui tire tous les objets vers le centre de la Terre (vers le bas).' },
+      { q:'La friction (frottement) s\'oppose toujours…',
+        o:['À la gravité','Au mouvement (ou au mouvement potentiel)','À la poussée d\'Archimède','Aux forces magnétiques'], a:'Au mouvement (ou au mouvement potentiel)',
+        e:'La friction est une force qui s\'oppose au mouvement relatif entre deux surfaces en contact. Elle agit en sens contraire au déplacement.' },
+      { q:'Un levier de 1er genre a son point d\'appui…',
+        o:['À l\'extrémité','Entre la charge et l\'effort','Du côté de la charge seulement','Du côté de l\'effort seulement'], a:'Entre la charge et l\'effort',
+        e:'Levier 1er genre : point d\'appui au centre (entre charge et effort). Ex. : balançoire, ciseaux, pince-levier, pied-de-biche.' },
+      { q:'Une brouette est un exemple de levier de…',
+        o:['1er genre','2e genre','3e genre','Ce n\'est pas un levier'], a:'2e genre',
+        e:'Levier 2e genre : la charge est entre le point d\'appui et l\'effort. Ex. : brouette, casse-noix, ouvre-bouteille.' },
+      { q:'Une pince à épiler est un exemple de levier de…',
+        o:['1er genre','2e genre','3e genre','4e genre'], a:'3e genre',
+        e:'Levier 3e genre : l\'effort est appliqué entre le point d\'appui et la charge. Ex. : pince à épiler, baguettes, avant-bras (biceps).' },
+      { q:'Quel est l\'avantage d\'un plan incliné?',
+        o:['Il augmente la distance de déplacement mais réduit la force nécessaire','Il réduit la distance et la force','Il augmente la force et la distance','Il n\'a aucun avantage mécanique'], a:'Il augmente la distance de déplacement mais réduit la force nécessaire',
+        e:'Un plan incliné permet de déplacer une charge avec moins de force, mais sur une plus grande distance. Ex. : rampe, route en zigzag en montagne.' },
+      { q:'La poulie simple (fixe) permet de…',
+        o:['Multiplier la force','Changer la direction de la force','Multiplier la vitesse','Éliminer le frottement'], a:'Changer la direction de la force',
+        e:'Une poulie fixe change seulement la direction de la force (on tire vers le bas pour lever vers le haut). Elle n\'offre pas d\'avantage mécanique de force.' },
+      { q:'L\'énergie cinétique est l\'énergie…',
+        o:['Stockée dans la position d\'un objet','Du mouvement','Thermique','Potentielle gravitationnelle'], a:'Du mouvement',
+        e:'L\'énergie cinétique est l\'énergie que possède un objet en mouvement. Plus l\'objet est lourd et rapide, plus son énergie cinétique est grande.' },
+      { q:'L\'énergie potentielle gravitationnelle d\'un objet augmente quand…',
+        o:['Il accélère','Il monte (sa hauteur augmente)','Il refroidit','Il s\'arrête'], a:'Il monte (sa hauteur augmente)',
+        e:'L\'énergie potentielle gravitationnelle dépend de la masse et de la hauteur. Plus un objet est haut, plus il a d\'énergie potentielle.' },
+      { q:'La loi de conservation de l\'énergie stipule que l\'énergie…',
+        o:['Se crée lors d\'une réaction chimique','Se détruit lors d\'un choc','Ne se crée ni ne se détruit, elle se transforme','Diminue toujours avec le temps'], a:'Ne se crée ni ne se détruit, elle se transforme',
+        e:'L\'énergie totale d\'un système isolé reste constante. Elle se transforme d\'une forme à une autre (ex. potentielle → cinétique), mais ne disparaît pas.' },
+      { q:'Quand un objet est en équilibre (au repos), la somme des forces qui s\'exercent sur lui est…',
+        o:['Maximale','Négative','Nulle (0 N)','Positive'], a:'Nulle (0 N)',
+        e:'Principe d\'équilibre : un objet est en repos ou en mouvement rectiligne uniforme si la somme (résultante) de toutes les forces est nulle.' },
+      { q:'La vis est une machine simple qui ressemble à…',
+        o:['Un levier enroulé autour d\'un cylindre','Un plan incliné enroulé autour d\'un axe cylindrique','Deux plans inclinés dos à dos','Une roue avec des dents'], a:'Un plan incliné enroulé autour d\'un axe cylindrique',
+        e:'La vis est conceptuellement un plan incliné (la rampe) enroulé en spirale autour d\'un cylindre. Elle transforme un mouvement de rotation en translation.' },
+      { q:'Le coin est composé de…',
+        o:['Deux leviers opposés','Deux plans inclinés dos à dos','Un levier et une poulie','Une roue et un axe'], a:'Deux plans inclinés dos à dos',
+        e:'Le coin est formé de deux plans inclinés adossés. Il sert à fendre ou séparer des objets. Ex. : hache, ciseau à bois, couteau.' },
+      { q:'Quelle transformation d\'énergie se produit dans une ampoule électrique?',
+        o:['Mécanique → chimique','Électrique → lumière + chaleur','Lumière → électrique','Thermique → mécanique'], a:'Électrique → lumière + chaleur',
+        e:'Une ampoule transforme l\'énergie électrique en énergie lumineuse ET thermique (chaleur). C\'est une transformation d\'énergie non idéale.' },
+      { q:'La différence entre la masse et le poids est…',
+        o:['Ils sont identiques','La masse est en N, le poids en kg','La masse est une quantité de matière (kg), le poids est une force causée par la gravité (N)','Le poids ne change jamais'], a:'La masse est une quantité de matière (kg), le poids est une force causée par la gravité (N)',
+        e:'Masse (kg) = quantité de matière, constante partout. Poids (N) = force gravitationnelle, change selon la gravité (sur la Lune, poids ÷ 6, masse identique).' },
+      { q:'Vrai ou faux : La friction est toujours nuisible et doit être éliminée.',
+        o:['Vrai','Faux'], a:'Faux',
+        e:'La friction est parfois utile : elle permet de marcher, freiner une voiture, écrire avec un crayon. On cherche à la réduire (moteurs) ou à l\'augmenter (pneus, semelles).' },
+      { q:'Quelle machine simple transforme une petite rotation en grand déplacement linéaire?',
+        o:['Le levier','La poulie','La vis','Le plan incliné'], a:'La vis',
+        e:'La vis (et l\'engrenage à vis sans fin) transforme une rotation en mouvement linéaire. Un tour complet de vis = avancement de un "pas" (distance entre deux filets).' },
+      { q:'Sur la Lune, la gravité est environ 6 fois plus faible que sur Terre. Le poids d\'un objet de 60 kg sur la Lune est d\'environ…',
+        o:['600 N','100 N','60 N','360 N'], a:'100 N',
+        e:'Sur Terre : P = m × g = 60 × 10 = 600 N. Sur la Lune : g_lune ≈ 1,6 m/s², P = 60 × 1,6 ≈ 100 N. La masse reste 60 kg.' },
+      { q:'Quelle transformation d\'énergie se passe dans les muscles lors d\'un effort physique?',
+        o:['Électrique → mécanique','Chimique (glucose) → mécanique + chaleur','Potentielle → cinétique','Lumière → chimique'], a:'Chimique (glucose) → mécanique + chaleur',
+        e:'Les muscles transforment l\'énergie chimique (glucose + O₂ via la respiration cellulaire) en énergie mécanique (contraction) et en chaleur.' },
+      { q:'Un système de poulies multiples (mouffle) permet de…',
+        o:['Changer uniquement la direction de la force','Multiplier la force à appliquer','Réduire la force nécessaire (avantage mécanique > 1)','N\'offre aucun avantage'], a:'Réduire la force nécessaire (avantage mécanique > 1)',
+        e:'Un système de poulies mobiles multiplie la force : avec 2 poulies, on peut soulever une charge de 100 N avec seulement 50 N d\'effort (mais sur 2× la distance).' },
+      { q:'Les 6 machines simples sont : levier, plan incliné, coin, vis, roue et axe, et…',
+        o:['Engrenage','Poulie','Ressort','Moteur'], a:'Poulie',
+        e:'Les 6 machines simples classiques : levier, plan incliné, coin, vis (et écrou), roue et axe, poulie. Toutes les machines complexes en sont des combinaisons.' }
+    ]
+  }
+];
+
+// ─── State ────────────────────────────────────────────────────
+let ST = { topic:null, qs:[], idx:0, answers:[], answered:false };
+const getScores = () => { try { return JSON.parse(localStorage.getItem('sciQ') || '{}'); } catch { return {}; } };
+const saveScore  = (id, s) => { const sc = getScores(); if (sc[id]===undefined || s>sc[id]) { sc[id]=s; localStorage.setItem('sciQ', JSON.stringify(sc)); } };
+
+function show(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+// ─── Home ─────────────────────────────────────────────────────
+function initHome() {
+  document.getElementById('week-badge').textContent = weekLabel();
+  const sc = getScores();
+  const grid = document.getElementById('topics-grid');
+  grid.innerHTML = '';
+  TOPICS.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'topic-card';
+    el.style.setProperty('--tc', t.color);
+    const best = sc[t.id];
+    el.innerHTML = `
+      <div class="tc-icon">${t.icon}</div>
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-desc">${t.desc}</div>
+      <div class="tc-meta">
+        <span>10 questions · aléatoires</span>
+        ${best!==undefined ? `<span class="tc-score">Meilleur : ${best}/10</span>` : '<span>Pas encore fait</span>'}
+      </div>`;
+    el.onclick = () => startQuiz(t.id);
+    grid.appendChild(el);
+  });
+}
+
+// ─── Quiz ─────────────────────────────────────────────────────
+function startQuiz(id) {
+  const topic = TOPICS.find(t=>t.id===id);
+  if (!topic) return;
+  const rng = new SRNG(Date.now() ^ (Math.random() * 0x100000000));
+  const qs  = rng.pick(topic.qs, 10).map(q => ({ ...q, o: rng.shuffle(q.o) }));
+  ST = { topic, qs, idx:0, answers:[], answered:false };
+  show('quiz-screen');
+  document.getElementById('quiz-title').textContent = `${topic.icon} ${topic.name}`;
+  renderQ();
+}
+function retryQuiz() { startQuiz(ST.topic.id); }
+
+function renderQ() {
+  const { qs, idx } = ST;
+  const q = qs[idx];
+  document.getElementById('prog-fill').style.width = (idx / qs.length * 100) + '%';
+  document.getElementById('prog-txt').textContent = `${idx+1} / ${qs.length}`;
+
+  const c = document.getElementById('q-container');
+  c.innerHTML = `
+    <div class="q-card">
+      <div class="q-num">Question ${idx+1} sur ${qs.length}</div>
+      <div class="q-text" id="qtxt"></div>
+      <div class="opts-grid" id="opts"></div>
+      <div id="fb"></div>
+    </div>
+    <div id="nxt"></div>`;
+  document.getElementById('qtxt').textContent = q.q;
+
+  const LETTERS = ['A','B','C','D'];
+  q.o.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<span class="opt-letter">${LETTERS[i]}</span><span class="opt-text"></span>`;
+    btn.querySelector('.opt-text').textContent = opt;
+    btn.onclick = () => pick(btn, opt);
+    document.getElementById('opts').appendChild(btn);
+  });
+  ST.answered = false;
+}
+
+function pick(btn, val) {
+  if (ST.answered) return;
+  ST.answered = true;
+  const q = ST.qs[ST.idx];
+  const ok = val === q.a;
+  ST.answers.push({ q:q.q, sel:val, ok, correct:q.a, exp:q.e });
+
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.disabled = true;
+    if (b.querySelector('.opt-text').textContent === q.a) b.classList.add('correct');
+    else if (b === btn && !ok) b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('fb');
+  fb.className = `feedback ${ok ? 'ok' : 'err'}`;
+  fb.innerHTML = `<strong></strong><br><small></small>`;
+  fb.querySelector('strong').textContent = ok ? '✅ Bravo !' : `❌ Pas tout à fait — la bonne réponse est : ${q.a}`;
+  fb.querySelector('small').textContent = q.e;
+
+  const isLast = ST.idx === ST.qs.length - 1;
+  const nb = document.createElement('button');
+  nb.className = 'next-btn';
+  nb.textContent = isLast ? '🏁 Voir les résultats' : 'Question suivante →';
+  nb.onclick = isLast ? showResults : () => { ST.idx++; renderQ(); };
+  document.getElementById('nxt').appendChild(nb);
+}
+
+function showResults() {
+  const score = ST.answers.filter(a=>a.ok).length;
+  saveScore(ST.topic.id, score);
+  show('results-screen');
+
+  const circ = 2 * Math.PI * 60;
+  const pct  = score / ST.qs.length;
+  const col  = pct >= .8 ? '#10b981' : pct >= .6 ? '#f59e0b' : '#ef4444';
+  const arc  = document.getElementById('score-arc');
+  arc.setAttribute('stroke', col);
+  arc.setAttribute('stroke-dasharray', circ);
+  arc.setAttribute('stroke-dashoffset', circ);
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-num').style.color = col;
+  setTimeout(() => {
+    arc.style.transition = 'stroke-dashoffset 1s ease';
+    arc.setAttribute('stroke-dashoffset', circ * (1 - pct));
+  }, 50);
+
+  const msgs = [[9,'🌟 Excellent!','Tu maîtrises ces notions de sciences!'],[7,'🎉 Très bien!','Continue, tu es sur la bonne voie!'],[5,'💪 Pas mal!','Relis tes notes et réessaie!'],[0,'📚 Continue!','N\'abandonne pas — chaque erreur est un apprentissage!']];
+  const [,m,s] = msgs.find(([min]) => score >= min);
+  document.getElementById('res-msg').textContent = m;
+  document.getElementById('res-sub').textContent = s;
+
+  const rl = document.getElementById('review-list');
+  rl.innerHTML = '';
+  ST.answers.forEach((a, i) => {
+    const div = document.createElement('div');
+    div.className = 'rev-item';
+    div.innerHTML = `
+      <div class="rev-icon">${a.ok ? '✅' : '❌'}</div>
+      <div>
+        <div class="rev-q"><strong>Q${i+1}.</strong> <span class="qt"></span></div>
+        <div class="rev-a at"></div>
+      </div>`;
+    div.querySelector('.qt').textContent = a.q;
+    if (a.ok) {
+      div.querySelector('.at').innerHTML = `<span class="ok-ans">Bonne réponse : <span class="r"></span></span>`;
+      div.querySelector('.r').textContent = a.correct;
+    } else {
+      div.querySelector('.at').innerHTML = `<span class="err-ans">Ta réponse : <span class="s"></span></span> · <span class="ok-ans">Bonne : <span class="c"></span></span>`;
+      div.querySelector('.s').textContent = a.sel;
+      div.querySelector('.c').textContent = a.correct;
+    }
+    rl.appendChild(div);
+  });
+
+  if (score >= 7) confetti();
+}
+
+function confetti() {
+  const cols = ['#059669','#34d399','#10b981','#f59e0b','#ef4444','#60a5fa','#a78bfa'];
+  for (let i = 0; i < 70; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'conf';
+      const sz = 6 + Math.random() * 9;
+      c.style.cssText = `left:${Math.random()*100}vw;top:-12px;width:${sz}px;height:${sz}px;background:${cols[~~(Math.random()*cols.length)]};animation-duration:${2+Math.random()*2}s;border-radius:${Math.random()>.5?'50%':'3px'}`;
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4500);
+    }, i * 45);
+  }
+}
+
+function goHome() { ST = {topic:null,qs:[],idx:0,answers:[],answered:false}; show('home-screen'); initHome(); }
+
+initHome();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>

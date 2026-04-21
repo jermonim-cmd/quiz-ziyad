@@ -1,0 +1,44 @@
+{
+  "name": "Quiz Ziyad — Maths Sec 1",
+  "short_name": "Quiz Ziyad",
+  "description": "Quiz interactifs de géométrie et décimaux pour Secondaire 1 au Québec",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d0d1f",
+  "theme_color": "#7c3aed",
+  "lang": "fr",
+  "categories": ["education", "kids"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Géométrie",
+      "short_name": "Géo",
+      "description": "Quiz de géométrie Sec 1",
+      "url": "./index.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Décimaux",
+      "short_name": "Déc",
+      "description": "Quiz de calcul décimal",
+      "url": "./decimaux.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    }
+  ]
+}
