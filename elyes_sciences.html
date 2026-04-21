@@ -396,8 +396,8 @@ function renderHome() {
 function startTopic(i) {
   state.topicIdx = i;
   const t = TOPICS[i];
-  const rng = new SRNG(weekSeed() * 31 + i * 997);
-  state.qs = rng.pick(t.qs, 10);
+  const rng = new SRNG(Date.now() ^ (Math.random() * 0x100000000));
+  state.qs = rng.pick(t.qs, 10).map(q => ({ ...q, o: rng.shuffle(q.o) }));
   state.cur = 0; state.score = 0; state.answers = [];
   document.getElementById('quiz-title').textContent = `${t.icon} ${t.name}`;
   show('quiz-screen');
@@ -409,15 +409,12 @@ function renderQ() {
   const n = state.cur, total = state.qs.length;
   document.getElementById('prog-fill').style.width = (n / total * 100) + '%';
   document.getElementById('prog-txt').textContent = `${n + 1} / ${total}`;
-  const t = TOPICS[state.topicIdx];
-  const rng = new SRNG(weekSeed() * 17 + state.topicIdx * 53 + n * 7);
-  const shuffled = rng.shuffle(q.o);
   document.getElementById('q-container').innerHTML = `
     <div class="q-card">
       <div class="q-num">Question ${n + 1}</div>
       <div class="q-text">${q.q}</div>
       <div class="opts-grid">
-        ${shuffled.map((o, idx) => `
+        ${q.o.map((o, idx) => `
           <button class="opt-btn" onclick="answer(this,'${o.replace(/'/g,"\\'")}')">
             <span class="opt-letter">${'ABCD'[idx]}</span>
             <span>${o}</span>
