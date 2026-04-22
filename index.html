@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Quiz Ziyad">
 <link rel="apple-touch-icon" href="icon.svg">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
 :root {
@@ -792,7 +793,28 @@ function showResults() {
     rl.appendChild(div);
   });
 
+  sendResultEmail('Ziyad', ST.topic.name, score, ST.qs.length, ST.answers);
   if (score >= 7) confetti();
+}
+
+// ─── EmailJS ──────────────────────────────────────────────────
+const EMAILJS_KEY      = 'VOTRE_CLE_PUBLIQUE';
+const EMAILJS_SERVICE  = 'VOTRE_SERVICE_ID';
+const EMAILJS_TEMPLATE = 'VOTRE_TEMPLATE_ID';
+
+function sendResultEmail(child, topic, score, total, answers) {
+  if (EMAILJS_KEY === 'VOTRE_CLE_PUBLIQUE') return;
+  const details = answers.map((a, i) =>
+    `Q${i+1} ${a.ok ? '✅' : '❌'}  ${a.q}\n       Bonne réponse : ${a.correct}`
+  ).join('\n\n');
+  emailjs.init({ publicKey: EMAILJS_KEY });
+  emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    child_name: child,
+    quiz_topic:  topic,
+    score:       `${score} / ${total}`,
+    date:        new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+    details:     details
+  }).catch(e => console.warn('EmailJS:', e));
 }
 
 // ─── Confetti ─────────────────────────────────────────────────

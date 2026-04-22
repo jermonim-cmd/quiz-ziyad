@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScienceBrevet — Sciences 3ème · Elyes</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 :root {
   --bg: #0d0d1f;
@@ -473,10 +474,36 @@ function showResults() {
       </div>
     </div>`).join('');
   show('results-screen');
+  sendResultEmail(
+    'Elyes',
+    TOPICS[state.topicIdx].name,
+    state.score, 10,
+    state.answers.map(a => ({ ok: a.correct, q: a.q, correct: a.a }))
+  );
   if (state.score === 10) confetti();
 }
 
 function retryQuiz() { startTopic(state.topicIdx); }
+
+// ─── EmailJS ──────────────────────────────────────────────────
+const EMAILJS_KEY      = 'VOTRE_CLE_PUBLIQUE';
+const EMAILJS_SERVICE  = 'VOTRE_SERVICE_ID';
+const EMAILJS_TEMPLATE = 'VOTRE_TEMPLATE_ID';
+
+function sendResultEmail(child, topic, score, total, answers) {
+  if (EMAILJS_KEY === 'VOTRE_CLE_PUBLIQUE') return;
+  const details = answers.map((a, i) =>
+    `Q${i+1} ${a.ok ? '✅' : '❌'}  ${a.q}\n       Bonne réponse : ${a.correct}`
+  ).join('\n\n');
+  emailjs.init({ publicKey: EMAILJS_KEY });
+  emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    child_name: child,
+    quiz_topic:  topic,
+    score:       `${score} / ${total}`,
+    date:        new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+    details:     details
+  }).catch(e => console.warn('EmailJS:', e));
+}
 
 function confetti() {
   const colors = ['#10b981','#34d399','#6ee7b7','#a7f3d0','#84cc16','#facc15'];

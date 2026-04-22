@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FrançaisBrevet — Français 3ème · Elyes</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 :root {
   --bg: #0d0d1f; --card: #161630; --text: #e2e8f0; --muted: #8892a4;
@@ -286,7 +287,22 @@ function goHome(){show('home-screen');}
 function renderQ(){const{qs,idx}=ST,q=qs[idx];document.getElementById('prog-fill').style.width=(idx/qs.length*100)+'%';document.getElementById('prog-txt').textContent=`${idx+1} / ${qs.length}`;const container=document.getElementById('q-container');container.innerHTML=`<div class="q-card"><div class="q-num">Question ${idx+1} sur ${qs.length}</div><div class="q-text" id="qtxt"></div><div class="opts-grid" id="opts"></div><div id="fb"></div></div><div id="nxt"></div>`;document.getElementById('qtxt').textContent=q.q;const LETTERS=['A','B','C','D'];q.o.forEach((opt,i)=>{const btn=document.createElement('button');btn.className='opt-btn';btn.innerHTML=`<span class="opt-letter">${LETTERS[i]}</span><span class="opt-text"></span>`;btn.querySelector('.opt-text').textContent=opt;btn.onclick=()=>pick(btn,opt);document.getElementById('opts').appendChild(btn);});ST.answered=false;}
 function pick(btn,val){if(ST.answered)return;ST.answered=true;const q=ST.qs[ST.idx],correct=val===q.a;ST.answers.push({q:q.q,given:val,correct:q.a,ok:correct,e:q.e});document.querySelectorAll('.opt-btn').forEach(b=>{b.disabled=true;if(b.querySelector('.opt-text').textContent===q.a)b.classList.add('correct');else if(b===btn&&!correct)b.classList.add('wrong');});const fb=document.getElementById('fb');fb.className='feedback '+(correct?'ok':'err');fb.textContent=(correct?'✅ Correct ! ':'❌ Non. ')+q.e;const nb=document.createElement('button');nb.className='next-btn';nb.textContent=ST.idx<ST.qs.length-1?'Question suivante →':'Voir mes résultats 🏁';nb.onclick=nextQ;document.getElementById('nxt').appendChild(nb);}
 function nextQ(){ST.idx++;if(ST.idx<ST.qs.length){renderQ();return;}const score=ST.answers.filter(a=>a.ok).length;saveScore(ST.topic.id,score);showResults(score);}
-function showResults(score){show('results-screen');const total=ST.qs.length,pct=score/total;document.getElementById('score-num').textContent=score;const arc=document.getElementById('score-arc');setTimeout(()=>{arc.style.strokeDashoffset=377*(1-pct);},100);arc.style.stroke=pct>=0.8?'#10b981':pct>=0.5?'#f59e0b':'#ef4444';const msgs=[['😓','Encore un effort…','Révise les notions et recommence !'],['🙂','Pas mal !','Continue à t\'entraîner pour le brevet.'],['😊','Bien joué !','Tu maîtrises bien ce thème.'],['🌟','Excellent !','Tu es prêt(e) pour le brevet de français !']];const m=msgs[pct>=0.9?3:pct>=0.7?2:pct>=0.5?1:0];document.getElementById('res-msg').textContent=m[0]+' '+m[1];document.getElementById('res-sub').textContent=m[2];const rev=document.getElementById('review-list');rev.innerHTML='';ST.answers.forEach(a=>{const d=document.createElement('div');d.className='rev-item';d.innerHTML=`<span class="rev-icon">${a.ok?'✅':'❌'}</span><div><div class="rev-q">${a.q}</div><div class="rev-a ${a.ok?'ok-ans':'err-ans'}">${a.ok?'Bonne réponse : '+a.correct:'Ta réponse : '+a.given+' · Réponse : '+a.correct}</div></div>`;rev.appendChild(d);});if(pct===1)confetti();}
+function showResults(score){show('results-screen');const total=ST.qs.length,pct=score/total;document.getElementById('score-num').textContent=score;const arc=document.getElementById('score-arc');setTimeout(()=>{arc.style.strokeDashoffset=377*(1-pct);},100);arc.style.stroke=pct>=0.8?'#10b981':pct>=0.5?'#f59e0b':'#ef4444';const msgs=[['😓','Encore un effort…','Révise les notions et recommence !'],['🙂','Pas mal !','Continue à t\'entraîner pour le brevet.'],['😊','Bien joué !','Tu maîtrises bien ce thème.'],['🌟','Excellent !','Tu es prêt(e) pour le brevet de français !']];const m=msgs[pct>=0.9?3:pct>=0.7?2:pct>=0.5?1:0];document.getElementById('res-msg').textContent=m[0]+' '+m[1];document.getElementById('res-sub').textContent=m[2];const rev=document.getElementById('review-list');rev.innerHTML='';ST.answers.forEach(a=>{const d=document.createElement('div');d.className='rev-item';d.innerHTML=`<span class="rev-icon">${a.ok?'✅':'❌'}</span><div><div class="rev-q">${a.q}</div><div class="rev-a ${a.ok?'ok-ans':'err-ans'}">${a.ok?'Bonne réponse : '+a.correct:'Ta réponse : '+a.given+' · Réponse : '+a.correct}</div></div>`;rev.appendChild(d);});sendResultEmail('Elyes',ST.topic.name,score,total,ST.answers);if(pct===1)confetti();}
+// ─── EmailJS ──────────────────────────────────────────────────
+const EMAILJS_KEY      = 'VOTRE_CLE_PUBLIQUE';
+const EMAILJS_SERVICE  = 'VOTRE_SERVICE_ID';
+const EMAILJS_TEMPLATE = 'VOTRE_TEMPLATE_ID';
+function sendResultEmail(child,topic,score,total,answers){
+  if(EMAILJS_KEY==='VOTRE_CLE_PUBLIQUE')return;
+  const details=answers.map((a,i)=>`Q${i+1} ${a.ok?'✅':'❌'}  ${a.q}\n       Bonne réponse : ${a.correct}`).join('\n\n');
+  emailjs.init({publicKey:EMAILJS_KEY});
+  emailjs.send(EMAILJS_SERVICE,EMAILJS_TEMPLATE,{
+    child_name:child,quiz_topic:topic,
+    score:`${score} / ${total}`,
+    date:new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+    details:details
+  }).catch(e=>console.warn('EmailJS:',e));
+}
 function confetti(){const colors=['#3b82f6','#6366f1','#a855f7','#ec4899','#14b8a6','#f59e0b'];for(let i=0;i<60;i++){const el=document.createElement('div');el.className='conf';Object.assign(el.style,{left:Math.random()*100+'vw',width:Math.random()*8+4+'px',height:Math.random()*8+4+'px',background:colors[Math.floor(Math.random()*colors.length)],animationDuration:Math.random()*2+1.5+'s',animationDelay:Math.random()*0.8+'s'});document.body.appendChild(el);setTimeout(()=>el.remove(),4000);}}
 initHome();
 </script>

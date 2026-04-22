@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MathBrevet — Maths 3ème · Elyes</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 :root {
   --bg: #0d0d1f;
@@ -476,7 +477,28 @@ function showResults(score) {
     d.innerHTML=`<span class="rev-icon">${a.ok?'✅':'❌'}</span><div><div class="rev-q">${a.q}</div><div class="rev-a ${a.ok?'ok-ans':'err-ans'}">${a.ok?'Bonne réponse : '+a.correct:'Ta réponse : '+a.given+' · Réponse : '+a.correct}</div></div>`;
     rev.appendChild(d);
   });
+  sendResultEmail('Elyes', ST.topic.name, score, total, ST.answers);
   if(pct===1) confetti();
+}
+
+// ─── EmailJS ──────────────────────────────────────────────────
+const EMAILJS_KEY      = 'VOTRE_CLE_PUBLIQUE';
+const EMAILJS_SERVICE  = 'VOTRE_SERVICE_ID';
+const EMAILJS_TEMPLATE = 'VOTRE_TEMPLATE_ID';
+
+function sendResultEmail(child, topic, score, total, answers) {
+  if (EMAILJS_KEY === 'VOTRE_CLE_PUBLIQUE') return;
+  const details = answers.map((a, i) =>
+    `Q${i+1} ${a.ok ? '✅' : '❌'}  ${a.q}\n       Bonne réponse : ${a.correct}`
+  ).join('\n\n');
+  emailjs.init({ publicKey: EMAILJS_KEY });
+  emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    child_name: child,
+    quiz_topic:  topic,
+    score:       `${score} / ${total}`,
+    date:        new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+    details:     details
+  }).catch(e => console.warn('EmailJS:', e));
 }
 
 function confetti() {
