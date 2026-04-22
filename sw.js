@@ -1,5 +1,5 @@
-// Quiz Family — Service Worker v2
-const CACHE_NAME = 'quiz-family-v2';
+// Quiz Family — Service Worker v3
+const CACHE_NAME = 'quiz-family-v3';
 
 const ASSETS = [
   './',
