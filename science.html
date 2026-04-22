@@ -824,17 +824,28 @@ const EMAILJS_SERVICE  = 'service_NET_MAILS';
 const EMAILJS_TEMPLATE = 'template_xfgfs3g';
 
 function sendResultEmail(child, topic, score, total, answers) {
-  if (EMAILJS_KEY === 'VOTRE_CLE_PUBLIQUE') return;
-  const details = answers.map((a, i) =>
-    `Q${i+1} ${a.ok ? '✅' : '❌'}  ${a.q}\n       Bonne réponse : ${a.correct}`
-  ).join('\n\n');
+  const pct = score / total;
+  const scoreColor = pct >= .8 ? '#10b981' : pct >= .6 ? '#f59e0b' : '#ef4444';
+  const medal = pct >= .9 ? '🏆' : pct >= .7 ? '🌟' : pct >= .5 ? '👍' : '💪';
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const rows = answers.map((a, i) =>
+    `<tr style="border-bottom:1px solid #e2e8f0;background:${a.ok?'#f0fdf4':'#fef2f2'}">
+      <td style="padding:12px 14px;font-size:20px;vertical-align:top;width:36px">${a.ok?'✅':'❌'}</td>
+      <td style="padding:12px 14px;font-family:sans-serif;vertical-align:top">
+        <div style="font-weight:600;color:#1e293b;margin-bottom:4px">Q${i+1}. ${esc(a.q)}</div>
+        <div style="font-size:13px;color:${a.ok?'#15803d':'#991b1b'}">Bonne réponse : <strong>${esc(a.correct)}</strong></div>
+      </td>
+    </tr>`
+  ).join('');
   emailjs.init({ publicKey: EMAILJS_KEY });
   emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
-    child_name: child,
+    child_name:  child,
     quiz_topic:  topic,
     score:       `${score} / ${total}`,
+    score_color: scoreColor,
+    medal:       medal,
     date:        new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'}),
-    details:     details
+    rows:        rows
   }).catch(e => console.warn('EmailJS:', e));
 }
 
