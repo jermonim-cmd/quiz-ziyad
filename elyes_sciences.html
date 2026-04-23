@@ -180,6 +180,7 @@ body::before {
 .rev-a { font-size: .8rem; }
 .ok-ans  { color: #10b981; }
 .err-ans { color: #ef4444; }
+.rev-exp { margin-top: 5px; font-size: .78rem; color: #a78bfa; font-style: italic; line-height: 1.4; }
 
 .res-actions { display: flex; flex-direction: column; gap: 11px; }
 .act-btn {
@@ -469,7 +470,7 @@ function showResults() {
       <div>
         <div class="rev-q">${a.q}</div>
         <div class="rev-a">
-          ${a.correct ? `<span class="ok-ans">✓ ${a.a}</span>` : `<span class="err-ans">✗ ${a.chosen}</span> → <span class="ok-ans">${a.a}</span>`}
+          ${a.correct ? `<span class="ok-ans">✓ ${a.a}</span>` : `<span class="err-ans">✗ ${a.chosen}</span> → <span class="ok-ans">${a.a}</span>${a.e ? `<div class="rev-exp">${a.e}</div>` : ''}`}
         </div>
       </div>
     </div>`).join('');

@@ -200,6 +200,7 @@ body::before {
 .rev-a { font-size: .8rem; }
 .ok-ans  { color: #10b981; }
 .err-ans { color: #ef4444; }
+.rev-exp { margin-top: 5px; font-size: .78rem; color: #a78bfa; font-style: italic; line-height: 1.4; }
 
 .res-actions { display: flex; flex-direction: column; gap: 11px; }
 .act-btn {
@@ -602,9 +603,10 @@ function showResults() {
       div.querySelector('.rev-atxt').innerHTML = `<span class="ok-ans">Bonne réponse : <span class="r"></span></span>`;
       div.querySelector('.r').textContent = a.correct;
     } else {
-      div.querySelector('.rev-atxt').innerHTML = `<span class="err-ans">Ta réponse : <span class="s"></span></span> · <span class="ok-ans">Bonne : <span class="c"></span></span>`;
+      div.querySelector('.rev-atxt').innerHTML = `<span class="err-ans">Ta réponse : <span class="s"></span></span> · <span class="ok-ans">Bonne : <span class="c"></span></span>${a.exp ? '<div class="rev-exp"><span class="exp-txt"></span></div>' : ''}`;
       div.querySelector('.s').textContent = a.sel;
       div.querySelector('.c').textContent = a.correct;
+      if (a.exp) div.querySelector('.exp-txt').textContent = a.exp;
     }
     rl.appendChild(div);
   });

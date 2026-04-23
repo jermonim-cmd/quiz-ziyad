@@ -180,6 +180,7 @@ body::before {
 .rev-a { font-size: .8rem; }
 .ok-ans  { color: #10b981; }
 .err-ans { color: #ef4444; }
+.rev-exp { margin-top: 5px; font-size: .78rem; color: #a78bfa; font-style: italic; line-height: 1.4; }
 
 .res-actions { display: flex; flex-direction: column; gap: 11px; }
 .act-btn {
@@ -474,7 +475,7 @@ function showResults(score) {
   const rev=document.getElementById('review-list'); rev.innerHTML='';
   ST.answers.forEach(a=>{
     const d=document.createElement('div'); d.className='rev-item';
-    d.innerHTML=`<span class="rev-icon">${a.ok?'✅':'❌'}</span><div><div class="rev-q">${a.q}</div><div class="rev-a ${a.ok?'ok-ans':'err-ans'}">${a.ok?'Bonne réponse : '+a.correct:'Ta réponse : '+a.given+' · Réponse : '+a.correct}</div></div>`;
+    d.innerHTML=`<span class="rev-icon">${a.ok?'✅':'❌'}</span><div><div class="rev-q">${a.q}</div><div class="rev-a ${a.ok?'ok-ans':'err-ans'}">${a.ok?'Bonne réponse : '+a.correct:'Ta réponse : '+a.given+' · Réponse : '+a.correct}${!a.ok&&a.e?'<div class="rev-exp">'+a.e+'</div>':''}</div></div>`;
     rev.appendChild(d);
   });
   sendResultEmail('Elyes', ST.topic.name, score, total, ST.answers);
