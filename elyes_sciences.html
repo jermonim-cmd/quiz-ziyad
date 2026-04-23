@@ -488,6 +488,7 @@ function retryQuiz() { startTopic(state.topicIdx); }
 
 // ─── EmailJS ──────────────────────────────────────────────────
 const EMAILJS_KEY      = 'CfrxX5NPbmE14wAmd';
+const EMAILJS_PRIVATE_KEY = 'ehJuYOOg6elSKdIKyKKTz';
 const EMAILJS_SERVICE  = 'service_NET_MAILS';
 const EMAILJS_TEMPLATE = 'template_xfpfs3g';
 
@@ -505,7 +506,7 @@ function sendResultEmail(child, topic, score, total, answers) {
       </td>
     </tr>`
   ).join('');
-  emailjs.init({ publicKey: EMAILJS_KEY });
+  emailjs.init({ publicKey: EMAILJS_KEY, privateKey: EMAILJS_PRIVATE_KEY });
   emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
     child_name:  child,
     quiz_topic:  topic,

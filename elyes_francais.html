@@ -291,6 +291,7 @@ function nextQ(){ST.idx++;if(ST.idx<ST.qs.length){renderQ();return;}const score=
 function showResults(score){show('results-screen');const total=ST.qs.length,pct=score/total;document.getElementById('score-num').textContent=score;const arc=document.getElementById('score-arc');setTimeout(()=>{arc.style.strokeDashoffset=377*(1-pct);},100);arc.style.stroke=pct>=0.8?'#10b981':pct>=0.5?'#f59e0b':'#ef4444';const msgs=[['😓','Encore un effort…','Révise les notions et recommence !'],['🙂','Pas mal !','Continue à t\'entraîner pour le brevet.'],['😊','Bien joué !','Tu maîtrises bien ce thème.'],['🌟','Excellent !','Tu es prêt(e) pour le brevet de français !']];const m=msgs[pct>=0.9?3:pct>=0.7?2:pct>=0.5?1:0];document.getElementById('res-msg').textContent=m[0]+' '+m[1];document.getElementById('res-sub').textContent=m[2];const rev=document.getElementById('review-list');rev.innerHTML='';ST.answers.forEach(a=>{const d=document.createElement('div');d.className='rev-item';d.innerHTML=`<span class="rev-icon">${a.ok?'✅':'❌'}</span><div><div class="rev-q">${a.q}</div><div class="rev-a ${a.ok?'ok-ans':'err-ans'}">${a.ok?'Bonne réponse : '+a.correct:'Ta réponse : '+a.given+' · Réponse : '+a.correct}${!a.ok&&a.e?'<div class="rev-exp">'+a.e+'</div>':''}</div></div>`;rev.appendChild(d);});sendResultEmail('Elyes',ST.topic.name,score,total,ST.answers);if(pct===1)confetti();}
 // ─── EmailJS ──────────────────────────────────────────────────
 const EMAILJS_KEY      = 'CfrxX5NPbmE14wAmd';
+const EMAILJS_PRIVATE_KEY = 'ehJuYOOg6elSKdIKyKKTz';
 const EMAILJS_SERVICE  = 'service_NET_MAILS';
 const EMAILJS_TEMPLATE = 'template_xfpfs3g';
 function sendResultEmail(child,topic,score,total,answers){
@@ -307,7 +308,7 @@ function sendResultEmail(child,topic,score,total,answers){
       </td>
     </tr>`
   ).join('');
-  emailjs.init({publicKey:EMAILJS_KEY});
+  emailjs.init({publicKey:EMAILJS_KEY,privateKey:EMAILJS_PRIVATE_KEY});
   emailjs.send(EMAILJS_SERVICE,EMAILJS_TEMPLATE,{
     child_name:child,quiz_topic:topic,
     score:`${score} / ${total}`,
