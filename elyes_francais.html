@@ -315,7 +315,9 @@ function sendResultEmail(child,topic,score,total,answers){
     score_color:scoreColor,medal:medal,
     date:new Date().toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'}),
     rows:rows
-  }).catch(e=>console.warn('EmailJS:',e));
+  })
+  .then(() => console.log('EmailJS : envoi réussi'))
+  .catch(e=>console.warn('EmailJS : erreur',e));
 }
 function confetti(){const colors=['#3b82f6','#6366f1','#a855f7','#ec4899','#14b8a6','#f59e0b'];for(let i=0;i<60;i++){const el=document.createElement('div');el.className='conf';Object.assign(el.style,{left:Math.random()*100+'vw',width:Math.random()*8+4+'px',height:Math.random()*8+4+'px',background:colors[Math.floor(Math.random()*colors.length)],animationDuration:Math.random()*2+1.5+'s',animationDelay:Math.random()*0.8+'s'});document.body.appendChild(el);setTimeout(()=>el.remove(),4000);}}
 initHome();

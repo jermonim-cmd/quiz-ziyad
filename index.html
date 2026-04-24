@@ -828,7 +828,9 @@ function sendResultEmail(child, topic, score, total, answers) {
     medal:       medal,
     date:        new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'}),
     rows:        rows
-  }).catch(e => console.warn('EmailJS:', e));
+  })
+  .then(() => console.log('EmailJS : envoi réussi'))
+  .catch(e => console.warn('EmailJS : erreur', e));
 }
 
 // ─── Confetti ─────────────────────────────────────────────────
