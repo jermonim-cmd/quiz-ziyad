@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Family — Ziyad & Elyes</title>
+<style>
+:root {
+  --bg: #0d0d1f;
+  --card: #161630;
+  --text: #e2e8f0;
+  --muted: #8892a4;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0 0 60px;
+}
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 15% 25%, rgba(124,58,237,.13) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 75%, rgba(249,115,22,.10) 0%, transparent 55%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HERO ── */
+.hero {
+  position: relative; z-index: 1;
+  text-align: center; padding: 64px 20px 32px;
+}
+.hero h1 {
+  font-size: clamp(2.2rem, 7vw, 3.4rem); font-weight: 900; letter-spacing: -1px;
+  background: linear-gradient(135deg, #a78bfa 0%, #fb923c 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero p { color: var(--muted); margin-top: 10px; font-size: 1.05rem; }
+
+/* ── GRID ── */
+.children-grid {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px; max-width: 820px; margin: 0 auto; padding: 0 20px;
+}
+
+/* ── CHILD CARD ── */
+.child-card {
+  background: var(--card);
+  border-radius: 22px; padding: 30px 26px 26px;
+  border: 1px solid rgba(255,255,255,.05);
+  transition: transform .25s, box-shadow .25s;
+}
+.child-card:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+.child-card.ziyad { border-top: 3px solid #7c3aed; }
+.child-card.elyes  { border-top: 3px solid #f97316; }
+
+.child-avatar {
+  width: 60px; height: 60px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; margin-bottom: 14px;
+}
+.ziyad .child-avatar { background: rgba(124,58,237,.18); }
+.elyes  .child-avatar { background: rgba(249,115,22,.18); }
+
+.child-name {
+  font-size: 1.5rem; font-weight: 800; margin-bottom: 4px;
+}
+.ziyad .child-name { color: #c4b5fd; }
+.elyes  .child-name { color: #fb923c; }
+
+.child-level {
+  color: var(--muted); font-size: .85rem; margin-bottom: 22px;
+  display: flex; align-items: center; gap: 6px;
+}
+.level-badge {
+  padding: 2px 10px; border-radius: 99px; font-size: .75rem; font-weight: 700;
+}
+.ziyad .level-badge { background: rgba(124,58,237,.18); color: #a78bfa; }
+.elyes  .level-badge { background: rgba(249,115,22,.18); color: #fb923c; }
+
+/* ── SUBJECT BUTTONS ── */
+.subjects { display: flex; flex-direction: column; gap: 10px; }
+.subj-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; border-radius: 13px; text-decoration: none;
+  font-size: .95rem; font-weight: 600; border: 1px solid rgba(255,255,255,.06);
+  transition: background .2s, border-color .2s, transform .15s;
+  color: var(--text);
+}
+.subj-btn:hover { transform: translateX(4px); }
+
+/* Ziyad subjects */
+.ziyad .subj-btn.geo  { background: rgba(124,58,237,.12); }
+.ziyad .subj-btn.geo:hover  { background: rgba(124,58,237,.25); border-color: rgba(124,58,237,.5); }
+.ziyad .subj-btn.dec  { background: rgba(245,158,11,.10); }
+.ziyad .subj-btn.dec:hover  { background: rgba(245,158,11,.22); border-color: rgba(245,158,11,.4); }
+.ziyad .subj-btn.sci  { background: rgba(5,150,105,.10); }
+.ziyad .subj-btn.sci:hover  { background: rgba(5,150,105,.22); border-color: rgba(5,150,105,.4); }
+.ziyad .subj-btn.soc  { background: rgba(6,182,212,.10); }
+.ziyad .subj-btn.soc:hover  { background: rgba(6,182,212,.22); border-color: rgba(6,182,212,.4); }
+
+/* Elyes subjects */
+.elyes .subj-btn.mat  { background: rgba(249,115,22,.12); }
+.elyes .subj-btn.mat:hover  { background: rgba(249,115,22,.25); border-color: rgba(249,115,22,.5); }
+.elyes .subj-btn.fra  { background: rgba(59,130,246,.10); }
+.elyes .subj-btn.fra:hover  { background: rgba(59,130,246,.22); border-color: rgba(59,130,246,.4); }
+.elyes .subj-btn.sci  { background: rgba(16,185,129,.10); }
+.elyes .subj-btn.sci:hover  { background: rgba(16,185,129,.22); border-color: rgba(16,185,129,.4); }
+
+.subj-icon { font-size: 1.4rem; flex-shrink: 0; }
+.subj-info { flex: 1; }
+.subj-name { display: block; }
+.subj-desc { font-size: .75rem; color: var(--muted); font-weight: 400; margin-top: 1px; }
+.subj-arrow { color: var(--muted); font-size: .9rem; }
+
+/* ── FOOTER ── */
+footer {
+  position: relative; z-index: 1;
+  text-align: center; color: var(--muted); font-size: .78rem; margin-top: 48px;
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🎓 Quiz Family</h1>
+  <p>Entraîne-toi chaque semaine · Questions renouvelées</p>
+</div>
+
+<div class="children-grid">
+
+  <!-- ── ZIYAD ── -->
+  <div class="child-card ziyad">
+    <div class="child-avatar">🧒</div>
+    <div class="child-name">Ziyad</div>
+    <div class="child-level">
+      <span class="level-badge">Secondaire 1</span>
+      Programme québécois
+    </div>
+    <div class="subjects">
+      <a href="index.html"    class="subj-btn geo">
+        <span class="subj-icon">📐</span>
+        <span class="subj-info">
+          <span class="subj-name">Géométrie</span>
+          <span class="subj-desc">Angles, polygones, transformations</span>
+        </span>
+        <span class="subj-arrow">›</span>
+      </a>
+      <a href="decimaux.html" class="subj-btn dec">
+        <span class="subj-icon">🔢</span>
+        <span class="subj-info">
+          <span class="subj-name">Décimaux & Fractions</span>
+          <span class="subj-desc">Opérations, comparaisons, conversions</span>
+        </span>
+        <span class="subj-arrow">›</span>
+      </a>
+      <a href="science.html"  class="subj-btn sci">
+        <span class="subj-icon">🔬</span>
+        <span class="subj-info">
+          <span class="subj-name">Sciences</span>
+          <span class="subj-desc">Biologie, physique, chimie</span>
+        </span>
+        <span class="subj-arrow">›</span>
+      </a>
+      <a href="univers_social.html" class="subj-btn soc">
+        <span class="subj-icon">🌍</span>
+        <span class="subj-info">
+          <span class="subj-name">Univers Social</span>
+          <span class="subj-desc">Histoire, géographie, civilisations</span>
+        </span>
+        <span class="subj-arrow">›</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ── ELYES ── -->
+  <div class="child-card elyes">
+    <div class="child-avatar">🧒</div>
+    <div class="child-name">Elyes</div>
+    <div class="child-level">
+      <span class="level-badge">3ème — Brevet</span>
+      Programme français
+    </div>
+    <div class="subjects">
+      <a href="elyes_maths.html"    class="subj-btn mat">
+        <span class="subj-icon">📊</span>
+        <span class="subj-info">
+          <span class="subj-name">Mathématiques</span>
+          <span class="subj-desc">Pythagore, Thalès, fonctions, stats</span>
+        </span>
+        <span class="subj-arrow">›</span>
+      </a>
+      <a href="elyes_francais.html" class="subj-btn fra">
+        <span class="subj-icon">📖</span>
+        <span class="subj-info">
+          <span class="subj-name">Français</span>
+          <span class="subj-desc">Grammaire, conjugaison, figures de style</span>
+        </span>
+        <span class="subj-arrow">›</span>
+      </a>
+      <a href="elyes_sciences.html" class="subj-btn sci">
+        <span class="subj-icon">🧬</span>
+        <span class="subj-info">
+          <span class="subj-name">Sciences</span>
+          <span class="subj-desc">Physique-Chimie, SVT</span>
+        </span>
+        <span class="subj-arrow">›</span>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<footer>Quiz Family · Semaine <span id="wk"></span> · <span id="yr"></span></footer>
+<script>
+const d = new Date(), jan = new Date(d.getFullYear(),0,1);
+document.getElementById('wk').textContent = Math.floor((d-jan)/86400000/7)+1;
+document.getElementById('yr').textContent = d.getFullYear();
+</script>
+</body>
+</html>
