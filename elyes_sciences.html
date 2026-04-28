@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScienceBrevet — Sciences 3ème · Elyes</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+:root {
+  --bg: #0d0d1f;
+  --card: #161630;
+  --card2: #1e1e3a;
+  --text: #e2e8f0;
+  --muted: #8892a4;
+  --accent: #10b981;
+  --accent2: #34d399;
+  --success: #10b981;
+  --error: #ef4444;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(16,185,129,.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(5,150,105,.08) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+.screen { position: relative; z-index: 1; min-height: 100vh; display: none; }
+.screen.active { display: block; }
+
+.top-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: center; gap: 8px; padding: 10px 16px;
+  background: rgba(13,13,31,.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(16,185,129,.12); flex-wrap: wrap;
+}
+.nav-tab {
+  padding: 6px 16px; border-radius: 20px; font-size: .82rem; font-weight: 600;
+  cursor: pointer; text-decoration: none; transition: all .2s; border: none; font-family: inherit;
+}
+.nav-tab.home { background: rgba(255,255,255,.07); color: var(--muted); border: 1px solid rgba(255,255,255,.12); }
+.nav-tab.home:hover { background: rgba(255,255,255,.13); color: var(--text); }
+.nav-tab.mat  { background: rgba(249,115,22,.12);  color: #fb923c; border: 1px solid rgba(249,115,22,.3); }
+.nav-tab.fra  { background: rgba(59,130,246,.12); color: #93c5fd; border: 1px solid rgba(59,130,246,.3); }
+.nav-tab.sci  { background: rgba(16,185,129,.2);  color: #6ee7b7; border: 1px solid rgba(16,185,129,.4); }
+.nav-tab.mat:hover { background: rgba(249,115,22,.25); }
+.nav-tab.fra:hover { background: rgba(59,130,246,.25); }
+
+.home-header { text-align: center; padding: 90px 20px 24px; }
+.home-header h1 {
+  font-size: clamp(2rem, 6vw, 3rem); font-weight: 900;
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  letter-spacing: -1px;
+}
+.home-header .sub { color: var(--muted); margin-top: 6px; font-size: 1rem; }
+.week-badge {
+  display: inline-block; margin-top: 14px;
+  background: rgba(16,185,129,.15); border: 1px solid rgba(16,185,129,.35);
+  border-radius: 20px; padding: 5px 18px; font-size: .8rem; color: #34d399;
+}
+.topics-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 16px; max-width: 960px; margin: 0 auto; padding: 16px 20px 60px;
+}
+.topic-card {
+  background: var(--card); border-radius: 18px; padding: 26px 24px;
+  cursor: pointer; border: 1px solid rgba(255,255,255,.05);
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+  position: relative; overflow: hidden;
+}
+.topic-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--tc, #10b981);
+}
+.topic-card:hover {
+  transform: translateY(-5px); border-color: rgba(255,255,255,.12);
+  box-shadow: 0 24px 48px rgba(0,0,0,.4);
+}
+.tc-icon { font-size: 2.4rem; margin-bottom: 12px; }
+.tc-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+.tc-desc { color: var(--muted); font-size: .83rem; line-height: 1.5; }
+.tc-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 16px; font-size: .78rem; color: var(--muted);
+}
+.tc-score {
+  background: rgba(16,185,129,.18); border-radius: 12px;
+  padding: 2px 10px; color: #34d399; font-weight: 600;
+}
+
+#quiz-screen { max-width: 720px; margin: 0 auto; padding: 80px 20px 60px; }
+#results-screen { max-width: 620px; margin: 0 auto; padding: 80px 20px 60px; }
+.back-btn {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+  color: var(--text); padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; font-size: .9rem; margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 6px; transition: background .2s;
+}
+.back-btn:hover { background: rgba(255,255,255,.1); }
+.quiz-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; }
+.prog-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.prog-bar { flex: 1; height: 7px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 4px; transition: width .45s ease; }
+.prog-txt { font-size: .82rem; color: var(--muted); white-space: nowrap; }
+
+.q-card {
+  background: var(--card); border-radius: 20px; padding: 30px 28px;
+  border: 1px solid rgba(255,255,255,.05); margin-top: 22px;
+  animation: fadeUp .35s ease;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.q-num { font-size: .75rem; color: #34d399; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+.q-text { font-size: 1.15rem; font-weight: 500; line-height: 1.65; margin-bottom: 24px; }
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+@media (max-width: 480px) { .opts-grid { grid-template-columns: 1fr; } }
+
+.opt-btn {
+  background: rgba(255,255,255,.04); border: 2px solid rgba(255,255,255,.07);
+  border-radius: 12px; padding: 14px 18px; cursor: pointer; color: var(--text);
+  font-size: .98rem; text-align: left; display: flex; align-items: center;
+  gap: 12px; transition: background .18s, border-color .18s; font-family: inherit;
+}
+.opt-btn:hover:not(:disabled) { background: rgba(16,185,129,.14); border-color: rgba(16,185,129,.45); }
+.opt-btn.correct { background: rgba(16,185,129,.14); border-color: #10b981; }
+.opt-btn.wrong   { background: rgba(239,68,68,.14);  border-color: #ef4444; }
+.opt-btn:disabled { cursor: default; }
+.opt-letter {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,.08); display: flex; align-items: center;
+  justify-content: center; font-size: .82rem; font-weight: 700;
+}
+.opt-btn.correct .opt-letter { background: rgba(16,185,129,.3); }
+.opt-btn.wrong   .opt-letter { background: rgba(239,68,68,.3); }
+
+.feedback {
+  margin-top: 16px; padding: 14px 18px; border-radius: 12px;
+  font-size: .92rem; line-height: 1.55; animation: fadeUp .3s ease;
+}
+.feedback.ok  { background: rgba(16,185,129,.1);  border: 1px solid rgba(16,185,129,.3); color: #6ee7b7; }
+.feedback.err { background: rgba(239,68,68,.1);   border: 1px solid rgba(239,68,68,.3);  color: #fca5a5; }
+.next-btn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none; border-radius: 13px; color: #fff;
+  font-size: 1rem; font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: opacity .2s, transform .2s;
+}
+.next-btn:hover { opacity: .9; transform: translateY(-1px); }
+
+#results-screen { max-width: 620px; margin: 0 auto; padding: 20px 20px 60px; }
+.res-top { text-align: center; padding: 36px 0 28px; }
+.score-wrap { position: relative; width: 150px; height: 150px; margin: 0 auto 22px; }
+.score-svg { transform: rotate(-90deg); }
+.score-bg  { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 12; }
+.score-arc { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.score-inner {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.score-num { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+.score-den { font-size: .85rem; color: var(--muted); }
+.res-msg { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+.res-sub { color: var(--muted); margin-bottom: 30px; }
+
+.review-list { display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; }
+.rev-item {
+  background: var(--card); border-radius: 13px; padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.05); display: flex; gap: 12px; align-items: flex-start;
+}
+.rev-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.rev-q { font-size: .88rem; margin-bottom: 4px; line-height: 1.4; }
+.rev-a { font-size: .8rem; }
+.ok-ans  { color: #10b981; }
+.err-ans { color: #ef4444; }
+.rev-exp { margin-top: 5px; font-size: .78rem; color: #a78bfa; font-style: italic; line-height: 1.4; }
+
+.res-actions { display: flex; flex-direction: column; gap: 11px; }
+.act-btn {
+  padding: 14px; border-radius: 13px; font-size: 1rem; font-weight: 700;
+  cursor: pointer; border: none; font-family: inherit; transition: opacity .2s, transform .2s; width: 100%;
+}
+.act-btn:hover { opacity: .9; transform: translateY(-1px); }
+.act-primary   { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+.act-secondary { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: var(--text); }
+
+.conf { position: fixed; border-radius: 3px; animation: fall linear forwards; z-index: 9999; pointer-events: none; }
+@keyframes fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <a href="accueil.html"          class="nav-tab home">🏠 Accueil</a>
+  <a href="elyes_maths.html"      class="nav-tab mat">📊 Maths</a>
+  <a href="elyes_francais.html"   class="nav-tab fra">📖 Français</a>
+  <span                           class="nav-tab sci">🧬 Sciences</span>
+</nav>
+
+<div id="home-screen" class="screen active">
+  <div class="home-header">
+    <h1>🧬 ScienceBrevet</h1>
+    <p class="sub">Physique-Chimie & SVT · 3ème · Brevet France</p>
+    <div class="week-badge" id="week-badge"></div>
+  </div>
+  <div class="topics-grid" id="topics-grid"></div>
+</div>
+
+<div id="quiz-screen" class="screen">
+  <div style="display:flex;gap:10px;margin-bottom:18px">
+    <button class="back-btn" style="margin-bottom:0" onclick="goHome()">← Sujets</button>
+    <a href="accueil.html" class="back-btn" style="text-decoration:none;margin-bottom:0">🏠 Accueil</a>
+  </div>
+  <div class="quiz-title" id="quiz-title"></div>
+  <div class="prog-row">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="prog-txt" id="prog-txt"></span>
+  </div>
+  <div id="q-container"></div>
+</div>
+
+<div id="results-screen" class="screen">
+  <div class="res-top">
+    <div class="score-wrap">
+      <svg class="score-svg" width="150" height="150" viewBox="0 0 150 150">
+        <circle class="score-bg" cx="75" cy="75" r="60"/>
+        <circle class="score-arc" id="score-arc" cx="75" cy="75" r="60"
+          stroke="#10b981" stroke-dasharray="377" stroke-dashoffset="377"/>
+      </svg>
+      <div class="score-inner">
+        <div class="score-num" id="score-num">0</div>
+        <div class="score-den">sur 10</div>
+      </div>
+    </div>
+    <div class="res-msg" id="res-msg"></div>
+    <div class="res-sub" id="res-sub"></div>
+  </div>
+  <div class="review-list" id="review-list"></div>
+  <div class="res-actions">
+    <button class="act-btn act-primary"   onclick="retryQuiz()">🔄 Recommencer ce quiz</button>
+    <button class="act-btn act-secondary" onclick="goHome()">🏠 Choisir un autre thème</button>
+  </div>
+</div>
+
+<script>
+function SRNG(seed) {
+  let s = seed >>> 0;
+  this.next = () => { s = Math.imul(1664525, s) + 1013904223 >>> 0; return s / 0x100000000; };
+  this.int  = n => Math.floor(this.next() * n);
+  this.shuffle = a => { const r=[...a]; for(let i=r.length-1;i>0;i--){const j=this.int(i+1);[r[i],r[j]]=[r[j],r[i]];} return r; };
+  this.pick = (a, n) => this.shuffle(a).slice(0, n);
+}
+function weekSeed() { const d=new Date(),jan=new Date(d.getFullYear(),0,1); return d.getFullYear()*100+Math.floor((d-jan)/86400000/7); }
+function weekLabel() { const d=new Date(),jan=new Date(d.getFullYear(),0,1); return `Semaine ${Math.floor((d-jan)/86400000/7)+1} · ${d.getFullYear()}`; }
+
+const TOPICS = [
+  {
+    id:'physique', name:'Physique — Forces & Mouvement', icon:'⚡', color:'#f59e0b',
+    desc:'Vitesse, MRU, lois de Newton, pression, énergie',
+    qs:[
+      {q:'Quelle est la formule de la vitesse moyenne ?', o:['v = d × t','v = d / t','v = t / d','v = d + t'], a:'v = d / t', e:'La vitesse moyenne v = distance / durée (en m/s ou km/h).'},
+      {q:'Un mobile parcourt 150 km en 2 h. Quelle est sa vitesse moyenne ?', o:['300 km/h','50 km/h','75 km/h','100 km/h'], a:'75 km/h', e:'v = 150 / 2 = 75 km/h.'},
+      {q:'Qu\'est-ce qu\'un mouvement rectiligne uniforme (MRU) ?', o:['Vitesse variable sur une droite','Vitesse constante sur une droite','Trajectoire courbe à vitesse constante','Accélération constante'], a:'Vitesse constante sur une droite', e:'Le MRU est un mouvement en ligne droite à vitesse constante (sans accélération).'},
+      {q:'Quelle est l\'unité de la force dans le système international ?', o:['Joule (J)','Pascal (Pa)','Newton (N)','Watt (W)'], a:'Newton (N)', e:'La force se mesure en Newton (N), en hommage à Isaac Newton.'},
+      {q:'La première loi de Newton (principe d\'inertie) stipule qu\'un corps au repos…', o:['…accélère spontanément','…reste au repos si les forces se compensent','…subit toujours une force nette','…change toujours de direction'], a:'…reste au repos si les forces se compensent', e:'Si la somme des forces est nulle, le corps reste au repos ou en MRU.'},
+      {q:'Quelle est la formule de la pression ?', o:['P = F × S','P = F / S','P = S / F','P = F + S'], a:'P = F / S', e:'Pression P (en Pa) = Force F (en N) / Surface S (en m²).'},
+      {q:'L\'unité de pression dans le SI est :', o:['Newton (N)','Bar (bar)','Pascal (Pa)','Joule (J)'], a:'Pascal (Pa)', e:'1 Pa = 1 N/m². Le pascal est l\'unité SI de la pression.'},
+      {q:'Un objet de masse 5 kg est soumis à la pesanteur g = 10 N/kg. Quelle est son poids ?', o:['2 N','50 N','15 N','0,5 N'], a:'50 N', e:'Poids P = m × g = 5 × 10 = 50 N.'},
+      {q:'Quelle est la différence entre masse et poids ?', o:['Aucune différence','La masse est une force, le poids est une quantité de matière','La masse est invariable, le poids dépend de la pesanteur','La masse dépend du lieu, le poids est constant'], a:'La masse est invariable, le poids dépend de la pesanteur', e:'La masse (kg) est une propriété intrinsèque de la matière. Le poids (N) = m × g varie selon le lieu.'},
+      {q:'Quelle formule représente l\'énergie cinétique ?', o:['Ec = m × g × h','Ec = ½ × m × v²','Ec = m × v','Ec = F × d'], a:'Ec = ½ × m × v²', e:'L\'énergie cinétique Ec = ½mv² (m en kg, v en m/s, Ec en J).'},
+      {q:'L\'énergie potentielle de pesanteur est donnée par :', o:['Ep = ½mv²','Ep = F/S','Ep = m × g × h','Ep = P × V'], a:'Ep = m × g × h', e:'Ep = mgh, avec m (kg), g ≈ 10 N/kg, h (m) = hauteur par rapport au sol.'},
+      {q:'Lors d\'une chute libre sans frottement, l\'énergie mécanique est :', o:['Nulle','Croissante','Décroissante','Conservée'], a:'Conservée', e:'Sans frottement, l\'énergie potentielle se convertit en énergie cinétique : l\'énergie mécanique totale est conservée.'},
+      {q:'Quelle propriété du vecteur force doit-on préciser pour la définir complètement ?', o:['Seulement sa norme','Point d\'application, direction, sens et norme','Sa direction seulement','Sa norme et sa direction'], a:'Point d\'application, direction, sens et norme', e:'Un vecteur force est défini par 4 caractéristiques : point d\'application, direction, sens et norme (valeur).'},
+      {q:'Dans un MRU, que peut-on dire des forces qui s\'exercent sur le mobile ?', o:['Il n\'y a aucune force','Une seule force s\'applique','Les forces sont équilibrées (résultante nulle)','La force augmente'], a:'Les forces sont équilibrées (résultante nulle)', e:'En MRU, par le principe d\'inertie, la résultante des forces est nulle.'},
+      {q:'Convertir 36 km/h en m/s :', o:['36 m/s','10 m/s','3,6 m/s','100 m/s'], a:'10 m/s', e:'36 km/h ÷ 3,6 = 10 m/s. (Diviser par 3,6 pour convertir km/h en m/s.)'},
+    ]
+  },
+  {
+    id:'chimie', name:'Chimie — Atomes & Réactions', icon:'⚗️', color:'#8b5cf6',
+    desc:'Atomes, ions, réactions chimiques, pH, conservation de la masse',
+    qs:[
+      {q:'Qu\'est-ce qu\'un ion ?', o:['Un atome électriquement neutre','Un atome ayant perdu ou gagné des électrons','Un atome sans neutrons','Une molécule à deux atomes'], a:'Un atome ayant perdu ou gagné des électrons', e:'Un ion est un atome ou groupe d\'atomes ayant gagné ou perdu un ou plusieurs électrons, acquérant une charge électrique.'},
+      {q:'La loi de conservation de la masse stipule que :', o:['La masse augmente lors d\'une réaction','La masse totale des réactifs = masse totale des produits','La masse des produits est supérieure aux réactifs','La masse diminue toujours'], a:'La masse totale des réactifs = masse totale des produits', e:'Lavoisier : « Rien ne se crée, rien ne se perd, tout se transforme. » La masse est conservée lors d\'une réaction chimique.'},
+      {q:'Quelle est la formule chimique de l\'eau ?', o:['HO','H₂O₂','H₂O','OH₂'], a:'H₂O', e:'L\'eau est composée de 2 atomes d\'hydrogène et 1 atome d\'oxygène : H₂O.'},
+      {q:'Un pH inférieur à 7 indique une solution :', o:['Neutre','Basique','Acide','Saturée'], a:'Acide', e:'pH < 7 = acide, pH = 7 = neutre, pH > 7 = basique (alcalin).'},
+      {q:'Qu\'est-ce qu\'un électron ?', o:['Particule de charge positive dans le noyau','Particule neutre dans le noyau','Particule de charge négative autour du noyau','Particule lourde du noyau'], a:'Particule de charge négative autour du noyau', e:'L\'électron (e⁻) est une particule de charge négative qui gravite autour du noyau atomique.'},
+      {q:'Dans la formule CO₂, combien d\'atomes d\'oxygène y a-t-il ?', o:['1','3','2','4'], a:'2', e:'CO₂ = 1 atome de carbone C + 2 atomes d\'oxygène O. L\'indice 2 indique 2 atomes d\'oxygène.'},
+      {q:'Quelle est la charge d\'un ion sodium Na⁺ ?', o:['-1','+2','+1','0'], a:'+1', e:'Na⁺ est un cation (ion positif) : l\'atome de sodium a perdu 1 électron, d\'où la charge +1.'},
+      {q:'Lors d\'une réaction chimique, les atomes sont :', o:['Créés','Détruits','Ni créés ni détruits, mais réarrangés','Transformés en énergie'], a:'Ni créés ni détruits, mais réarrangés', e:'La conservation de la matière implique que les atomes se réarrangent pour former de nouvelles molécules, sans être créés ni détruits.'},
+      {q:'L\'équation de combustion du carbone est C + O₂ → CO₂. Si 12 g de C brûlent avec 32 g de O₂, quelle masse de CO₂ est produite ?', o:['12 g','32 g','44 g','20 g'], a:'44 g', e:'Conservation de la masse : 12 g + 32 g = 44 g de CO₂. Rien ne se perd !'},
+      {q:'Quelle solution a un pH = 7 ?', o:['Vinaigre','Eau pure','Soude','Jus de citron'], a:'Eau pure', e:'L\'eau pure distillée a un pH de 7 : elle est neutre. Le vinaigre et le citron sont acides, la soude est basique.'},
+      {q:'Un atome de chlore Cl possède 17 protons. Quelle est la charge d\'un ion Cl⁻ ?', o:['+1','-2','-1','0'], a:'-1', e:'Cl⁻ est un anion : le chlore a gagné 1 électron supplémentaire, d\'où la charge −1.'},
+      {q:'Qu\'est-ce qu\'un réactif dans une réaction chimique ?', o:['Un produit formé après la réaction','Une substance consommée pendant la réaction','Un catalyseur','Une substance inerte'], a:'Une substance consommée pendant la réaction', e:'Les réactifs sont les substances de départ consommées lors de la réaction. Les substances formées sont les produits.'},
+      {q:'Lequel est un exemple de transformation chimique (et non physique) ?', o:['Fusion de la glace','Ébullition de l\'eau','Combustion du bois','Dissolution du sel dans l\'eau'], a:'Combustion du bois', e:'La combustion du bois produit de nouvelles substances (CO₂, H₂O, cendres) : c\'est une transformation chimique. Les autres exemples sont des changements d\'état ou dissolutions (transformations physiques).'},
+      {q:'Quelle est la formule chimique du dioxygène (gaz respiré) ?', o:['O','O₃','O₂','2O'], a:'O₂', e:'Le dioxygène est la molécule O₂, composée de 2 atomes d\'oxygène liés. O₃ est l\'ozone.'},
+      {q:'Lors d\'un équilibrage d\'équation, que doit-on conserver de chaque côté ?', o:['Le nombre de molécules','Le nombre d\'atomes de chaque élément','Le volume des gaz','La température'], a:'Le nombre d\'atomes de chaque élément', e:'Pour équilibrer une équation chimique, le nombre d\'atomes de chaque élément doit être identique de chaque côté de la flèche.'},
+    ]
+  },
+  {
+    id:'genetique', name:'SVT — Génétique & Hérédité', icon:'🧬', color:'#06b6d4',
+    desc:'ADN, chromosomes, gènes, allèles, hérédité mendélienne',
+    qs:[
+      {q:'Combien de chromosomes possède une cellule humaine normale (somatique) ?', o:['23','44','46','48'], a:'46', e:'Les cellules humaines somatiques possèdent 46 chromosomes, organisés en 23 paires homologues.'},
+      {q:'Qu\'est-ce que l\'ADN ?', o:['Une protéine musculaire','Une molécule porteuse de l\'information génétique','Un type de lipide','Une enzyme digestive'], a:'Une molécule porteuse de l\'information génétique', e:'L\'ADN (Acide DésoxyriboNucléique) est la molécule support de l\'information génétique, présente dans le noyau de chaque cellule.'},
+      {q:'Un gène est :', o:['Un chromosome entier','Une portion d\'ADN codant pour une protéine ou un caractère','Une cellule reproductrice','Un type de mutation'], a:'Une portion d\'ADN codant pour une protéine ou un caractère', e:'Un gène est une séquence d\'ADN qui code pour la synthèse d\'une protéine ou contrôle l\'expression d\'un caractère héréditaire.'},
+      {q:'Les gamètes humains (ovule, spermatozoïde) contiennent :', o:['46 chromosomes','92 chromosomes','23 chromosomes','44 chromosomes'], a:'23 chromosomes', e:'Lors de la méiose, les gamètes reçoivent la moitié des chromosomes : 23 (au lieu de 46). La fécondation rétablit 46 chromosomes.'},
+      {q:'Qu\'appelle-t-on phénotype ?', o:['Le patrimoine génétique d\'un individu','L\'ensemble des caractères observables d\'un individu','Une mutation génétique','Un type de chromosome'], a:'L\'ensemble des caractères observables d\'un individu', e:'Le phénotype = caractères observables (morphologie, physiologie...) déterminés par le génotype et l\'environnement.'},
+      {q:'Qu\'appelle-t-on génotype ?', o:['Les caractères visibles','La composition en allèles d\'un individu pour un ou plusieurs gènes','Le nombre de chromosomes','La couleur des yeux uniquement'], a:'La composition en allèles d\'un individu pour un ou plusieurs gènes', e:'Le génotype désigne la constitution génétique d\'un individu : l\'ensemble des allèles qu\'il possède.'},
+      {q:'Un allèle dominant s\'exprime :', o:['Uniquement à l\'état homozygote','Même en présence d\'un seul exemplaire (hétérozygote)','Uniquement si les deux parents le transmettent','Jamais en présence d\'un autre allèle'], a:'Même en présence d\'un seul exemplaire (hétérozygote)', e:'Un allèle dominant (noté A) s\'exprime même si l\'individu n\'en possède qu\'une copie (génotype AA ou Aa).'},
+      {q:'Quel est le résultat de la mitose ?', o:['2 cellules filles génétiquement différentes','4 cellules filles à 23 chromosomes','2 cellules filles génétiquement identiques à la cellule mère','1 cellule fille avec 92 chromosomes'], a:'2 cellules filles génétiquement identiques à la cellule mère', e:'La mitose produit 2 cellules filles identiques à la cellule mère (46 chromosomes chacune). C\'est la division pour la croissance.'},
+      {q:'La méiose produit :', o:['2 cellules à 46 chromosomes','4 cellules à 23 chromosomes','2 cellules à 23 chromosomes','4 cellules à 46 chromosomes'], a:'4 cellules à 23 chromosomes', e:'La méiose (division cellulaire des gonades) produit 4 gamètes haploïdes, chacun avec 23 chromosomes.'},
+      {q:'Deux parents bruns (Bb × Bb) ont des enfants. Quelle proportion sera blonde (bb) ?', o:['0 %','25 %','50 %','75 %'], a:'25 %', e:'Croisement Bb × Bb : BB (25%), Bb (50%), bb (25%). La probabilité d\'être homozygote récessif (blond) est 1/4 = 25%.'},
+      {q:'Où se trouve l\'ADN dans une cellule eucaryote ?', o:['Dans les ribosomes','Dans les mitochondries uniquement','Principalement dans le noyau (et aussi mitochondries)','Dans la membrane cellulaire'], a:'Principalement dans le noyau (et aussi mitochondries)', e:'L\'ADN est majoritairement dans le noyau (chromosomes). On en trouve aussi en petite quantité dans les mitochondries.'},
+      {q:'Une mutation est :', o:['Un changement de la séquence d\'ADN','Une division cellulaire anormale','Un type de protéine','La mort d\'une cellule'], a:'Un changement de la séquence d\'ADN', e:'Une mutation est une modification de la séquence des nucléotides de l\'ADN. Elle peut être spontanée ou provoquée (UV, rayons X...).'},
+      {q:'L\'hémophilie est une maladie liée au chromosome X. Un père hémophile (XhY) et une mère saine non-porteuse (XX) : leurs fils seront-ils hémophiles ?', o:['Tous hémophiles','Aucun hémophile','50% hémophiles','25% hémophiles'], a:'Aucun hémophile', e:'Les fils reçoivent le Y du père et le X sain de la mère : ils sont X(sain)Y = sains. Les filles reçoivent le Xh du père mais seront porteuses.'},
+      {q:'Les chromosomes sexuels humains chez la femme sont :', o:['XY','XX','YY','XO'], a:'XX', e:'La femme possède deux chromosomes X (XX). L\'homme possède un X et un Y (XY).'},
+      {q:'Qu\'est-ce que l\'ARN messager (ARNm) ?', o:['Une copie de l\'ADN servant à fabriquer des protéines','Un chromosome','Une lipide membranaire','Un enzyme'], a:'Une copie de l\'ADN servant à fabriquer des protéines', e:'L\'ARNm est transcrit à partir de l\'ADN et sort du noyau pour être traduit en protéine par les ribosomes.'},
+    ]
+  },
+  {
+    id:'corps_humain', name:'SVT — Corps humain & Santé', icon:'🫀', color:'#ec4899',
+    desc:'Système nerveux, immunitaire, hormones, reproduction',
+    qs:[
+      {q:'Quel est le rôle du système nerveux central ?', o:['Produire des hormones','Traiter les informations et coordonner les réponses de l\'organisme','Filtrer le sang','Digérer les aliments'], a:'Traiter les informations et coordonner les réponses de l\'organisme', e:'Le système nerveux central (cerveau + moelle épinière) reçoit, traite les informations sensorielles et envoie des commandes motrices.'},
+      {q:'Qu\'est-ce qu\'un neurone ?', o:['Un globule rouge','Une cellule spécialisée dans la transmission de l\'influx nerveux','Une hormone','Un anticorps'], a:'Une cellule spécialisée dans la transmission de l\'influx nerveux', e:'Le neurone est la cellule de base du système nerveux, capable de recevoir et transmettre des signaux électriques (influx nerveux).'},
+      {q:'Les anticorps sont produits par :', o:['Les globules rouges','Les plaquettes','Les lymphocytes B','Les neurones'], a:'Les lymphocytes B', e:'Les lymphocytes B (type de globules blancs) se différencient en plasmocytes et produisent des anticorps spécifiques à l\'antigène rencontré.'},
+      {q:'Qu\'est-ce qu\'un antigène ?', o:['Une substance produite par l\'organisme pour se défendre','Toute substance reconnue comme étrangère par le système immunitaire','Un type de globule blanc','Une hormone anti-inflammatoire'], a:'Toute substance reconnue comme étrangère par le système immunitaire', e:'Un antigène est une molécule (souvent protéique) étrangère à l\'organisme qui déclenche une réponse immunitaire.'},
+      {q:'Quelle est la première ligne de défense de l\'organisme contre les pathogènes ?', o:['Les anticorps','La peau et les muqueuses','Les lymphocytes T','La rate'], a:'La peau et les muqueuses', e:'La peau et les muqueuses constituent la barrière physique (défenses non spécifiques) qui empêche l\'entrée des pathogènes.'},
+      {q:'L\'insuline est une hormone produite par :', o:['Le foie','Le pancréas','Les reins','La thyroïde'], a:'Le pancréas', e:'L\'insuline est sécrétée par les cellules bêta du pancréas. Elle régule la glycémie en favorisant l\'entrée du glucose dans les cellules.'},
+      {q:'Quel est le rôle du cœur dans la circulation sanguine ?', o:['Filtrer le sang','Produire des globules rouges','Pomper le sang dans tout l\'organisme','Stocker les hormones'], a:'Pomper le sang dans tout l\'organisme', e:'Le cœur est une pompe musculaire qui propulse le sang dans les artères (grande circulation) et dans les poumons (petite circulation).'},
+      {q:'La vaccination permet :', o:['De guérir une maladie déjà installée','De stimuler le système immunitaire pour qu\'il fabrique des anticorps préventifs','D\'éliminer les bactéries immédiatement','D\'augmenter les globules rouges'], a:'De stimuler le système immunitaire pour qu\'il fabrique des anticorps préventifs', e:'Le vaccin introduit un antigène inoffensif (pathogène atténué ou fragment). L\'organisme mémorise la réponse : défense rapide en cas d\'exposition.'},
+      {q:'Qu\'est-ce que la glycémie ?', o:['Taux de lipides dans le sang','Taux de glucose dans le sang','Pression artérielle','Taux d\'oxygène dans le sang'], a:'Taux de glucose dans le sang', e:'La glycémie est la concentration de glucose dans le sang. Sa valeur normale à jeun est d\'environ 1 g/L. Elle est régulée par l\'insuline et le glucagon.'},
+      {q:'Les globules rouges (hématies) transportent :', o:['Les hormones','Les anticorps','Le dioxygène (O₂) grâce à l\'hémoglobine','Le CO₂ uniquement'], a:'Le dioxygène (O₂) grâce à l\'hémoglobine', e:'Les hématies contiennent l\'hémoglobine (protéine contenant du fer) qui fixe le dioxygène dans les poumons et le libère dans les tissus.'},
+      {q:'Le VIH est un virus qui attaque principalement :', o:['Les globules rouges','Les neurones','Les lymphocytes T4 (CD4)','Les plaquettes'], a:'Les lymphocytes T4 (CD4)', e:'Le VIH (virus du SIDA) infecte et détruit les lymphocytes T4 (CD4), affaiblissant progressivement le système immunitaire.'},
+      {q:'Quelle est la fonction principale des poumons ?', o:['Filtrer le sang','Assurer les échanges gazeux (O₂/CO₂) entre le sang et l\'air','Produire des hormones','Digérer les graisses'], a:'Assurer les échanges gazeux (O₂/CO₂) entre le sang et l\'air', e:'Dans les alvéoles pulmonaires, le dioxygène passe de l\'air vers le sang, et le CO₂ du sang vers l\'air. C\'est la respiration.'},
+      {q:'Le système nerveux autonome contrôle :', o:['Les mouvements volontaires','Les fonctions involontaires (rythme cardiaque, digestion...)','La mémorisation','La vision'], a:'Les fonctions involontaires (rythme cardiaque, digestion...)', e:'Le système nerveux autonome (sympathique + parasympathique) régule les fonctions vitales inconscientes : cœur, respiration, digestion, etc.'},
+      {q:'Quel organe produit les spermatozoïdes ?', o:['Le pénis','L\'épididyme','Les testicules','La prostate'], a:'Les testicules', e:'Les spermatozoïdes sont produits dans les testicules par spermatogenèse. L\'épididyme est le lieu de leur maturation et stockage.'},
+      {q:'Qu\'est-ce que le diabète de type 1 ?', o:['Résistance à l\'insuline','Production insuffisante de glucagon','Destruction des cellules productrices d\'insuline (déficit en insuline)','Excès de globules rouges'], a:'Destruction des cellules productrices d\'insuline (déficit en insuline)', e:'Le diabète de type 1 est une maladie auto-immune : le système immunitaire détruit les cellules bêta du pancréas, entraînant un manque total d\'insuline.'},
+    ]
+  },
+  {
+    id:'environnement', name:'SVT — Environnement & Écologie', icon:'🌿', color:'#84cc16',
+    desc:'Photosynthèse, chaînes alimentaires, biodiversité, développement durable',
+    qs:[
+      {q:'Quelle est l\'équation bilan simplifiée de la photosynthèse ?', o:['CO₂ + H₂O → O₂ + glucose (en présence de lumière)','O₂ + glucose → CO₂ + H₂O','H₂O + O₂ → CO₂ + énergie','Glucose → CO₂ + O₂'], a:'CO₂ + H₂O → O₂ + glucose (en présence de lumière)', e:'La photosynthèse : 6CO₂ + 6H₂O + lumière → C₆H₁₂O₆ + 6O₂. Les plantes fixent le CO₂ et rejettent de l\'O₂.'},
+      {q:'Où se déroule la photosynthèse dans la cellule végétale ?', o:['Dans la mitochondrie','Dans le noyau','Dans le chloroplaste','Dans la vacuole'], a:'Dans le chloroplaste', e:'La photosynthèse se déroule dans les chloroplastes, organites contenant la chlorophylle (pigment vert qui capte la lumière).'},
+      {q:'Dans une chaîne alimentaire, les producteurs sont :', o:['Les carnivores','Les décomposeurs','Les végétaux (autotrophes)','Les herbivores'], a:'Les végétaux (autotrophes)', e:'Les producteurs (végétaux, algues) fabriquent leur matière organique via la photosynthèse. Ils sont à la base de toutes les chaînes alimentaires.'},
+      {q:'Qu\'est-ce que la biodiversité ?', o:['Uniquement la variété des espèces animales','La variété du vivant à tous les niveaux (gènes, espèces, écosystèmes)','Le nombre d\'individus d\'une espèce','La diversité des habitats uniquement'], a:'La variété du vivant à tous les niveaux (gènes, espèces, écosystèmes)', e:'La biodiversité englobe : la diversité génétique (au sein d\'une espèce), la diversité spécifique (nombre d\'espèces) et la diversité des écosystèmes.'},
+      {q:'Quel gaz à effet de serre est principalement responsable du réchauffement climatique d\'origine humaine ?', o:['Oxygène (O₂)','Azote (N₂)','Dioxyde de carbone (CO₂)','Argon (Ar)'], a:'Dioxyde de carbone (CO₂)', e:'Le CO₂ émis par la combustion de carburants fossiles est le principal gaz à effet de serre d\'origine anthropique responsable du réchauffement climatique.'},
+      {q:'Un écosystème est composé de :', o:['Uniquement les êtres vivants','Uniquement le milieu physique (sol, eau, air)','Des êtres vivants (biocénose) + leur milieu physique (biotope)','Des chaînes alimentaires uniquement'], a:'Des êtres vivants (biocénose) + leur milieu physique (biotope)', e:'Un écosystème = biotope (milieu physique : eau, sol, air, lumière) + biocénose (communauté d\'êtres vivants) en interaction.'},
+      {q:'La respiration cellulaire chez les êtres vivants consomme :', o:['CO₂ et produit O₂','O₂ et produit CO₂','Glucose uniquement','Lumière et CO₂'], a:'O₂ et produit CO₂', e:'Respiration cellulaire : glucose + O₂ → CO₂ + H₂O + énergie (ATP). C\'est l\'inverse de la photosynthèse.'},
+      {q:'Quelle est la principale cause de l\'érosion de la biodiversité aujourd\'hui ?', o:['Les volcans','La destruction des habitats naturels par l\'Homme','Les épidémies naturelles','La prédation'], a:'La destruction des habitats naturels par l\'Homme', e:'La déforestation, l\'urbanisation et l\'agriculture intensive détruisent les habitats naturels : principale cause d\'extinction des espèces.'},
+      {q:'Le développement durable vise à répondre aux besoins du présent :', o:['En sacrifiant les ressources naturelles','Sans compromettre la capacité des générations futures à répondre aux leurs','En priorité sur les besoins des générations futures','En n\'utilisant que les énergies fossiles'], a:'Sans compromettre la capacité des générations futures à répondre aux leurs', e:'Définition de Brundtland (1987) : développement qui satisfait les besoins actuels sans compromettre ceux des générations futures.'},
+      {q:'Les décomposeurs (bactéries, champignons) jouent le rôle de :', o:['Producteurs primaires','Prédateurs','Recycleurs de la matière organique en matière minérale','Herbivores'], a:'Recycleurs de la matière organique en matière minérale', e:'Les décomposeurs décomposent la matière organique morte en sels minéraux, recyclant les nutriments dans le sol utilisables par les plantes.'},
+      {q:'Qu\'est-ce que l\'effet de serre naturel ?', o:['Un phénomène uniquement néfaste créé par l\'industrie','Un mécanisme naturel qui maintient la Terre à une température habitable','La destruction de la couche d\'ozone','Un type de pollution lumineuse'], a:'Un mécanisme naturel qui maintient la Terre à une température habitable', e:'L\'effet de serre naturel (vapeur d\'eau, CO₂, méthane naturels) maintient la T° moyenne terrestre à +15°C au lieu de -18°C. Il devient problématique par son amplification d\'origine humaine.'},
+      {q:'Un réseau trophique représente :', o:['Un seul chemin de transfert d\'énergie','L\'ensemble des chaînes alimentaires interconnectées d\'un écosystème','La liste des espèces d\'un milieu','Le cycle de l\'eau'], a:'L\'ensemble des chaînes alimentaires interconnectées d\'un écosystème', e:'Un réseau trophique (ou réseau alimentaire) est l\'ensemble des chaînes alimentaires d\'un écosystème. Il est plus représentatif de la réalité qu\'une seule chaîne.'},
+      {q:'Lequel est un exemple d\'énergie renouvelable ?', o:['Charbon','Pétrole','Énergie solaire','Gaz naturel'], a:'Énergie solaire', e:'L\'énergie solaire (ainsi que l\'éolien, l\'hydraulique, la géothermie) est renouvelable car inépuisable à l\'échelle humaine. Charbon, pétrole et gaz naturel sont des énergies fossiles non renouvelables.'},
+      {q:'La chlorophylle est :', o:['Un minéral du sol','Le pigment vert des végétaux qui absorbe la lumière pour la photosynthèse','Une enzyme digestive','Un type d\'ADN'], a:'Le pigment vert des végétaux qui absorbe la lumière pour la photosynthèse', e:'La chlorophylle (dans les chloroplastes) absorbe principalement la lumière rouge et bleue, réfléchit le vert (d\'où la couleur verte des plantes).'},
+      {q:'Qu\'est-ce qu\'une espèce invasive ?', o:['Une espèce en voie de disparition','Une espèce introduite hors de son aire d\'origine qui perturbe l\'écosystème local','Une espèce endémique d\'une île','Une espèce carnivore'], a:'Une espèce introduite hors de son aire d\'origine qui perturbe l\'écosystème local', e:'Une espèce invasive est introduite (souvent par l\'Homme) dans un nouvel écosystème où elle prolifère et nuit aux espèces locales (ex : frelon asiatique, ragondin).'},
+    ]
+  },
+];
+
+const LS_KEY = 'elyesSci';
+let state = { topicIdx: null, qs: [], cur: 0, score: 0, answers: [] };
+
+function getScores() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; } }
+function saveScore(id, s) { const d = getScores(); d[id] = Math.max(d[id] || 0, s); localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function goHome() { show('home-screen'); renderHome(); }
+
+function renderHome() {
+  document.getElementById('week-badge').textContent = weekLabel();
+  const scores = getScores();
+  const grid = document.getElementById('topics-grid');
+  grid.innerHTML = TOPICS.map((t,i) => {
+    const best = scores[t.id];
+    const scoreHtml = best !== undefined
+      ? `<span class="tc-score">${best}/10</span>`
+      : `<span style="color:var(--muted)">Pas encore joué</span>`;
+    return `<div class="topic-card" style="--tc:${t.color}" onclick="startTopic(${i})">
+      <div class="tc-icon">${t.icon}</div>
+      <div class="tc-name" style="color:${t.color}">${t.name}</div>
+      <div class="tc-desc">${t.desc}</div>
+      <div class="tc-meta"><span>10 questions</span>${scoreHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+function startTopic(i) {
+  state.topicIdx = i;
+  const t = TOPICS[i];
+  const rng = new SRNG(Date.now() ^ (Math.random() * 0x100000000));
+  state.qs = rng.pick(t.qs, 10).map(q => ({ ...q, o: rng.shuffle(q.o) }));
+  state.cur = 0; state.score = 0; state.answers = [];
+  document.getElementById('quiz-title').textContent = `${t.icon} ${t.name}`;
+  show('quiz-screen');
+  renderQ();
+}
+
+function renderQ() {
+  const q = state.qs[state.cur];
+  const n = state.cur, total = state.qs.length;
+  document.getElementById('prog-fill').style.width = (n / total * 100) + '%';
+  document.getElementById('prog-txt').textContent = `${n + 1} / ${total}`;
+  document.getElementById('q-container').innerHTML = `
+    <div class="q-card">
+      <div class="q-num">Question ${n + 1}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="opts-grid">
+        ${q.o.map((o, idx) => `
+          <button class="opt-btn" onclick="answer(this,'${o.replace(/'/g,"\\'")}')">
+            <span class="opt-letter">${'ABCD'[idx]}</span>
+            <span>${o}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+}
+
+function answer(btn, chosen) {
+  const q = state.qs[state.cur];
+  const correct = chosen === q.a;
+  if (correct) state.score++;
+  state.answers.push({ q: q.q, chosen, correct, a: q.a, e: q.e });
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.disabled = true;
+    const label = b.querySelector('span:last-child').textContent;
+    if (label === q.a) b.classList.add('correct');
+    else if (b === btn && !correct) b.classList.add('wrong');
+  });
+  const fb = document.createElement('div');
+  fb.className = `feedback ${correct ? 'ok' : 'err'}`;
+  fb.innerHTML = `${correct ? '✅' : '❌'} ${q.e}`;
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'next-btn';
+  nextBtn.textContent = state.cur + 1 < state.qs.length ? 'Question suivante →' : 'Voir les résultats';
+  nextBtn.onclick = () => { state.cur++; state.cur < state.qs.length ? renderQ() : showResults(); };
+  const card = document.querySelector('.q-card');
+  card.appendChild(fb); card.appendChild(nextBtn);
+}
+
+function showResults() {
+  const t = TOPICS[state.topicIdx];
+  saveScore(t.id, state.score);
+  const pct = state.score / 10;
+  const circ = 2 * Math.PI * 60;
+  document.getElementById('score-arc').style.strokeDashoffset = circ * (1 - pct);
+  document.getElementById('score-arc').setAttribute('stroke', t.color);
+  document.getElementById('score-num').textContent = state.score;
+  document.getElementById('score-num').style.color = t.color;
+  const msgs = ['💪 Continue tes efforts !', '👍 Pas mal !', '🌟 Très bien !', '🏆 Excellent !', '🎉 Parfait !'];
+  const subs = ['Révise et réessaie.', 'Tu progresses !', 'Beau travail !', 'Tu maîtrises bien !', 'Score parfait !'];
+  const lvl = state.score <= 3 ? 0 : state.score <= 5 ? 1 : state.score <= 7 ? 2 : state.score <= 9 ? 3 : 4;
+  document.getElementById('res-msg').textContent = msgs[lvl];
+  document.getElementById('res-sub').textContent = subs[lvl];
+  document.getElementById('review-list').innerHTML = state.answers.map(a =>
+    `<div class="rev-item">
+      <span class="rev-icon">${a.correct ? '✅' : '❌'}</span>
+      <div>
+        <div class="rev-q">${a.q}</div>
+        <div class="rev-a">
+          ${a.correct ? `<span class="ok-ans">✓ ${a.a}</span>` : `<span class="err-ans">✗ ${a.chosen}</span> → <span class="ok-ans">${a.a}</span>${a.e ? `<div class="rev-exp">${a.e}</div>` : ''}`}
+        </div>
+      </div>
+    </div>`).join('');
+  show('results-screen');
+  sendResultEmail(
+    'Elyes',
+    TOPICS[state.topicIdx].name,
+    state.score, 10,
+    state.answers.map(a => ({ ok: a.correct, q: a.q, correct: a.a }))
+  );
+  if (state.score === 10) confetti();
+}
+
+function retryQuiz() { startTopic(state.topicIdx); }
+
+// ─── EmailJS ──────────────────────────────────────────────────
+const EMAILJS_KEY      = 'CfrxX5NPbmE14wAmd';
+const EMAILJS_PRIVATE_KEY = 'ehJuYOOg6elSKdIKyKKTz';
+const EMAILJS_SERVICE  = 'service_NET_MAILS';
+const EMAILJS_TEMPLATE = 'template_xfpfs3g';
+
+function sendResultEmail(child, topic, score, total, answers) {
+  const pct = score / total;
+  const scoreColor = pct >= .8 ? '#10b981' : pct >= .6 ? '#f59e0b' : '#ef4444';
+  const medal = pct >= .9 ? '🏆' : pct >= .7 ? '🌟' : pct >= .5 ? '👍' : '💪';
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const rows = answers.map((a, i) =>
+    `<tr style="border-bottom:1px solid #e2e8f0;background:${a.ok?'#f0fdf4':'#fef2f2'}">
+      <td style="padding:12px 14px;font-size:20px;vertical-align:top;width:36px">${a.ok?'✅':'❌'}</td>
+      <td style="padding:12px 14px;font-family:sans-serif;vertical-align:top">
+        <div style="font-weight:600;color:#1e293b;margin-bottom:4px">Q${i+1}. ${esc(a.q)}</div>
+        <div style="font-size:13px;color:${a.ok?'#15803d':'#991b1b'}">Bonne réponse : <strong>${esc(a.correct)}</strong></div>
+      </td>
+    </tr>`
+  ).join('');
+  emailjs.init({ publicKey: EMAILJS_KEY, privateKey: EMAILJS_PRIVATE_KEY });
+  emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    child_name:  child,
+    quiz_topic:  topic,
+    score:       `${score} / ${total}`,
+    score_color: scoreColor,
+    medal:       medal,
+    date:        new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+    rows:        rows
+  }).catch(e => console.warn('EmailJS:', e));
+}
+
+function confetti() {
+  const colors = ['#10b981','#34d399','#6ee7b7','#a7f3d0','#84cc16','#facc15'];
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div');
+    el.className = 'conf';
+    const sz = 6 + Math.random() * 8;
+    el.style.cssText = `width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random()*colors.length)]};left:${Math.random()*100}vw;top:-20px;animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*.8}s;`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+}
+
+renderHome();
+</script>
+</body>
+</html>
