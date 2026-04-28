@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SocialQuiz — Univers Social · Ziyad</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#06b6d4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quiz Ziyad">
+<link rel="apple-touch-icon" href="icon.svg">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<style>
+:root {
+  --bg: #0f0d08;
+  --card: #1e1a10;
+  --text: #f0e8d8;
+  --muted: #9a8f7a;
+  --success: #10b981;
+  --error: #ef4444;
+  --acc: #06b6d4;
+  --acc2: #0891b2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(6,182,212,.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(16,185,129,.07) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+.screen { position: relative; z-index: 1; min-height: 100vh; display: none; }
+.screen.active { display: block; }
+
+/* ── TOP NAV ── */
+.top-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: center; gap: 8px; padding: 10px 16px;
+  background: rgba(15,13,8,.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(6,182,212,.12);
+  flex-wrap: wrap;
+}
+.nav-tab {
+  padding: 7px 20px; border-radius: 20px; font-size: .85rem; font-weight: 600;
+  cursor: pointer; text-decoration: none; transition: all .2s; border: none; font-family: inherit;
+}
+.nav-tab.geo  { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); }
+.nav-tab.dec  { background: rgba(245,158,11,.2);  color: #fcd34d; border: 1px solid rgba(245,158,11,.4); }
+.nav-tab.sci  { background: rgba(5,150,105,.12);  color: #6ee7b7; border: 1px solid rgba(5,150,105,.3); }
+.nav-tab.soc  { background: rgba(6,182,212,.15);  color: #22d3ee; border: 1px solid rgba(6,182,212,.3); }
+.nav-tab.home { background: rgba(255,255,255,.07); color: var(--muted); border: 1px solid rgba(255,255,255,.12); }
+.nav-tab.home:hover { background: rgba(255,255,255,.14); color: var(--text); }
+.nav-tab.geo:hover { background: rgba(124,58,237,.3); }
+.nav-tab.dec:hover { background: rgba(245,158,11,.35); }
+.nav-tab.sci:hover { background: rgba(5,150,105,.28); }
+.nav-tab.soc:hover { background: rgba(6,182,212,.3); }
+
+/* ── HOME ── */
+.home-header { text-align: center; padding: 90px 20px 24px; }
+.home-header h1 {
+  font-size: clamp(2rem, 6vw, 3rem); font-weight: 900; letter-spacing: -1px;
+  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.home-header .sub { color: var(--muted); margin-top: 6px; font-size: 1rem; }
+.week-badge {
+  display: inline-block; margin-top: 14px;
+  background: rgba(6,182,212,.12); border: 1px solid rgba(6,182,212,.3);
+  border-radius: 20px; padding: 5px 18px; font-size: .8rem; color: #22d3ee;
+}
+.topics-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 16px; max-width: 960px; margin: 0 auto; padding: 16px 20px 60px;
+}
+.topic-card {
+  background: var(--card); border-radius: 18px; padding: 26px 24px;
+  cursor: pointer; border: 1px solid rgba(255,255,255,.05);
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+  position: relative; overflow: hidden;
+}
+.topic-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--tc, #06b6d4);
+}
+.topic-card:hover {
+  transform: translateY(-5px); border-color: rgba(255,255,255,.12);
+  box-shadow: 0 24px 48px rgba(0,0,0,.4);
+}
+.tc-icon { font-size: 2.4rem; margin-bottom: 12px; }
+.tc-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+.tc-desc { color: var(--muted); font-size: .83rem; line-height: 1.5; }
+.tc-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 16px; font-size: .78rem; color: var(--muted);
+}
+.tc-score {
+  background: rgba(6,182,212,.15); border-radius: 12px;
+  padding: 2px 10px; color: #22d3ee; font-weight: 600;
+}
+
+/* ── QUIZ ── */
+#quiz-screen { max-width: 720px; margin: 0 auto; padding: 80px 20px 60px; }
+.back-btn {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+  color: var(--text); padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; font-size: .9rem; margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 6px; transition: background .2s; font-family: inherit;
+}
+.back-btn:hover { background: rgba(255,255,255,.1); }
+.quiz-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; }
+.prog-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.prog-bar { flex: 1; height: 7px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg, #06b6d4, #0891b2); border-radius: 4px; transition: width .45s ease; }
+.prog-txt { font-size: .82rem; color: var(--muted); white-space: nowrap; }
+
+.q-card {
+  background: var(--card); border-radius: 20px; padding: 30px 28px;
+  border: 1px solid rgba(255,255,255,.05); margin-top: 22px;
+  animation: fadeUp .35s ease;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.q-num { font-size: .75rem; color: #22d3ee; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+.q-text { font-size: 1.15rem; font-weight: 500; line-height: 1.65; margin-bottom: 24px; }
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+@media (max-width: 480px) { .opts-grid { grid-template-columns: 1fr; } }
+
+.opt-btn {
+  background: rgba(255,255,255,.04); border: 2px solid rgba(255,255,255,.07);
+  border-radius: 12px; padding: 14px 18px; cursor: pointer; color: var(--text);
+  font-size: .98rem; text-align: left; display: flex; align-items: center;
+  gap: 12px; transition: background .18s, border-color .18s; font-family: inherit;
+}
+.opt-btn:hover:not(:disabled) {
+  background: rgba(6,182,212,.12); border-color: rgba(6,182,212,.45);
+}
+.opt-btn.correct { background: rgba(16,185,129,.14); border-color: #10b981; }
+.opt-btn.wrong   { background: rgba(239,68,68,.14);  border-color: #ef4444;  }
+.opt-btn:disabled { cursor: default; }
+.opt-letter {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,.08); display: flex; align-items: center;
+  justify-content: center; font-size: .82rem; font-weight: 700;
+}
+.opt-btn.correct .opt-letter { background: rgba(16,185,129,.3); }
+.opt-btn.wrong   .opt-letter { background: rgba(239,68,68,.3); }
+
+.feedback {
+  margin-top: 16px; padding: 14px 18px; border-radius: 12px;
+  font-size: .92rem; line-height: 1.55; animation: fadeUp .3s ease;
+}
+.feedback.ok  { background: rgba(16,185,129,.1);  border: 1px solid rgba(16,185,129,.3);  color: #6ee7b7; }
+.feedback.err { background: rgba(239,68,68,.1);   border: 1px solid rgba(239,68,68,.3);   color: #fca5a5; }
+.next-btn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  border: none; border-radius: 13px; color: #0f0d08;
+  font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: opacity .2s, transform .2s;
+}
+.next-btn:hover { opacity: .9; transform: translateY(-1px); }
+
+/* ── RESULTS ── */
+#results-screen { max-width: 620px; margin: 0 auto; padding: 80px 20px 60px; }
+.res-top { text-align: center; padding: 20px 0 28px; }
+.score-wrap {
+  position: relative; width: 150px; height: 150px; margin: 0 auto 22px;
+}
+.score-svg { transform: rotate(-90deg); }
+.score-bg  { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 12; }
+.score-arc { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.score-inner {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.score-num { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+.score-den { font-size: .85rem; color: var(--muted); }
+.res-msg { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+.res-sub { color: var(--muted); margin-bottom: 30px; }
+
+.review-list { display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; }
+.rev-item {
+  background: var(--card); border-radius: 13px; padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.05); display: flex; gap: 12px; align-items: flex-start;
+}
+.rev-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.rev-q { font-size: .88rem; margin-bottom: 4px; line-height: 1.4; }
+.rev-a { font-size: .8rem; }
+.ok-ans  { color: #10b981; }
+.err-ans { color: #ef4444; }
+.rev-exp { margin-top: 5px; font-size: .78rem; color: #22d3ee; font-style: italic; line-height: 1.4; }
+
+.res-actions { display: flex; flex-direction: column; gap: 11px; }
+.act-btn {
+  padding: 14px; border-radius: 13px; font-size: 1rem; font-weight: 700;
+  cursor: pointer; border: none; font-family: inherit; transition: opacity .2s, transform .2s; width: 100%;
+}
+.act-btn:hover { opacity: .9; transform: translateY(-1px); }
+.act-primary { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #0f0d08; }
+.act-secondary { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: var(--text); }
+
+/* confetti */
+.conf { position: fixed; border-radius: 3px; animation: fall linear forwards; z-index: 9999; pointer-events: none; }
+@keyframes fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <a href="accueil.html" class="nav-tab home">🏠 Accueil</a>
+  <a href="index.html"   class="nav-tab geo">📐 Géométrie</a>
+  <a href="decimaux.html" class="nav-tab dec">🔢 Décimaux</a>
+  <a href="science.html" class="nav-tab sci">🔬 Sciences</a>
+  <span                  class="nav-tab soc">🌍 Univers Social</span>
+</nav>
+
+<!-- HOME -->
+<div id="home-screen" class="screen active">
+  <div class="home-header">
+    <h1>🌍 SocialQuiz</h1>
+    <p class="sub">Univers social · Secondaire 1 · Québec</p>
+    <div class="week-badge" id="week-badge"></div>
+  </div>
+  <div class="topics-grid" id="topics-grid"></div>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz-screen" class="screen">
+  <div style="display:flex;gap:10px;margin-bottom:18px">
+    <button class="back-btn" style="margin-bottom:0" onclick="goHome()">← Sujets</button>
+    <a href="accueil.html" class="back-btn" style="text-decoration:none;margin-bottom:0">🏠 Accueil</a>
+  </div>
+  <div class="quiz-title" id="quiz-title"></div>
+  <div class="prog-row">
+    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="prog-txt" id="prog-txt"></span>
+  </div>
+  <div id="q-container"></div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-screen" class="screen">
+  <div class="res-top">
+    <div class="score-wrap">
+      <svg class="score-svg" width="150" height="150" viewBox="0 0 150 150">
+        <circle class="score-bg" cx="75" cy="75" r="60"/>
+        <circle class="score-arc" id="score-arc" cx="75" cy="75" r="60"
+          stroke="#06b6d4" stroke-dasharray="377" stroke-dashoffset="377"/>
+      </svg>
+      <div class="score-inner">
+        <div class="score-num" id="score-num">0</div>
+        <div class="score-den">sur 10</div>
+      </div>
+    </div>
+    <div class="res-msg" id="res-msg"></div>
+    <div class="res-sub" id="res-sub"></div>
+  </div>
+  <div class="review-list" id="review-list"></div>
+  <div class="res-actions">
+    <button class="act-btn act-primary"   onclick="retryQuiz()">🔄 Recommencer ce quiz</button>
+    <button class="act-btn act-secondary" onclick="goHome()">🏠 Choisir un autre sujet</button>
+  </div>
+</div>
+
+<script>
+// ─── Seeded RNG ───────────────────────────────────────────────
+function SRNG(seed) {
+  let s = seed >>> 0;
+  this.next = () => { s = Math.imul(1664525, s) + 1013904223 >>> 0; return s / 0x100000000; };
+  this.int  = n => Math.floor(this.next() * n);
+  this.shuffle = a => {
+    const r = [...a];
+    for (let i = r.length - 1; i > 0; i--) { const j = this.int(i+1); [r[i],r[j]]=[r[j],r[i]]; }
+    return r;
+  };
+  this.pick = (a, n) => this.shuffle(a).slice(0, n);
+}
+function weekSeed() {
+  const d = new Date(), jan = new Date(d.getFullYear(), 0, 1);
+  const wk = Math.floor((d - jan) / 86400000 / 7);
+  return d.getFullYear() * 100 + wk;
+}
+function weekLabel() {
+  const d = new Date(), jan = new Date(d.getFullYear(), 0, 1);
+  const wk = Math.floor((d - jan) / 86400000 / 7) + 1;
+  return `Semaine ${wk} · ${d.getFullYear()}`;
+}
+
+// ─── Question Bank ────────────────────────────────────────────
+const TOPICS = [
+  {
+    id: 'introduction', name: 'Introduction', icon: '📖', color: '#06b6d4',
+    desc: 'Les bases de l\'univers social et l\'étude des sociétés humaines',
+    qs: [
+      { q:'Qu\'est-ce que l\'univers social?', o:['L\'étude des planètes','L\'étude des sociétés humaines et de leurs interactions','L\'étude des mathématiques','L\'étude de la physique'], a:'L\'étude des sociétés humaines et de leurs interactions', e:'L\'univers social englobe l\'histoire (l\'étude du passé) et la géographie (l\'étude de l\'espace et des populations). Ces disciplines nous aident à comprendre comment les sociétés se développent et interagissent avec leur environnement.' },
+      { q:'Quels domaines compose l\'univers social?', o:['Mathématiques et sciences','Histoire et géographie','Littérature et poésie','Musique et arts'], a:'Histoire et géographie', e:'L\'univers social s\'organise principalement autour de l\'histoire (l\'étude des événements passés) et de la géographie (l\'étude de l\'espace, des populations et des cultures). Ces deux domaines se complètent pour une compréhension globale des sociétés.' },
+      { q:'Pourquoi étudions-nous les sociétés passées?', o:['Pour passer l\'examen','Pour comprendre notre présent et préparer notre avenir','Pour mémoriser des dates','Pour apprendre des langues'], a:'Pour comprendre notre présent et préparer notre avenir', e:'L\'étude du passé nous permet de mieux comprendre comment les sociétés se sont développées et comment les décisions historiques influencent notre vie actuelle. C\'est essentiel pour prendre des décisions éclairées à l\'avenir.' },
+      { q:'Qu\'est-ce que la géographie humaine?', o:['L\'étude des montagnes','L\'étude des populations, de leur culture et de leurs territoires','L\'étude de la météo','L\'étude des animaux'], a:'L\'étude des populations, de leur culture et de leurs territoires', e:'La géographie humaine s\'intéresse aux peuples et à leurs interactions avec l\'espace.' },
+      { q:'Quel est le principal objectif de l\'étude de l\'univers social?', o:['Mémoriser toutes les dates','Devenir historien obligatoirement','Développer une compréhension du monde et des sociétés','Apprendre par cœur tous les noms de villes'], a:'Développer une compréhension du monde et des sociétés', e:'L\'objectif est de développer la pensée critique et la compréhension du monde.' },
+      { q:'Qu\'est-ce qu\'une civilisation?', o:['Un groupe de personnes vivant à côté','Une société organisée avec culture, gouvernement et technologie','Un continent','Un pays'], a:'Une société organisée avec culture, gouvernement et technologie', e:'Une civilisation est un groupe de personnes qui partagent une culture commune, un système de gouvernement organisé, une forme d\'écriture, une technologie avancée et des institutions sociales. Exemples : l\'Égypte antique, la Mésopotamie.' },
+      { q:'Comment les sources historiques nous aident-elles?', o:['Elles créent des mensonges','Elles nous aident à reconstituer le passé','Elles sont toutes fausses','Elles ne servent à rien'], a:'Elles nous aident à reconstituer le passé', e:'Les sources historiques (documents, objets) témoignent de la vie passée.' },
+      { q:'Qu\'est-ce que la chronologie?', o:['L\'étude des chronomètres','L\'ordre des événements dans le temps','L\'étude des religions','L\'étude du climat'], a:'L\'ordre des événements dans le temps', e:'La chronologie classe les événements du plus ancien au plus récent.' },
+      { q:'Quel est le rôle de la géographie?', o:['Enseigner la géométrie','Expliquer les relations entre les humains et leur environnement','Apprendre l\'astronomie','Étudier les sports'], a:'Expliquer les relations entre les humains et leur environnement', e:'La géographie étudie comment les humains vivent sur la Terre.' },
+      { q:'Qu\'est-ce qui distingue une source primaire d\'une source secondaire?', o:['Les sources primaires sont toujours vraies','Les sources primaires sont des documents d\'époque; les secondaires sont des analyses ultérieures','Les sources secondaires sont plus vieilles','Il n\'y a pas de différence'], a:'Les sources primaires sont des documents d\'époque; les secondaires sont des analyses ultérieures', e:'Les sources primaires viennent de l\'époque étudiée; les secondaires les analysent.' }
+    ]
+  },
+  {
+    id: 'sedentarisation', name: 'Sédentarisation', icon: '🏘️', color: '#0891b2',
+    desc: 'Le passage du nomadisme à la vie sédentaire et l\'agriculture',
+    qs: [
+      { q:'Qu\'est-ce que la sédentarisation?', o:['Rester assis longtemps','Le passage du nomadisme à la vie fixe','Un type de danse','L\'étude de la géologie'], a:'Le passage du nomadisme à la vie fixe', e:'La sédentarisation est le processus par lequel les peuples deviennent fixes en un lieu.' },
+      { q:'Pourquoi les peuples se sont-ils sédentarisés?', o:['Par ennui','Pour élever du bétail et cultiver la terre','Pour faire la guerre','Par hasard'], a:'Pour élever du bétail et cultiver la terre', e:'Le développement de l\'agriculture et l\'élevage ont permis aux peuples de s\'installer.' },
+      { q:'Qu\'est-ce qu\'un nomade?', o:['Une personne qui vit dans les villes','Une personne qui se déplace continuellement pour se nourrir','Un guerrier','Un marchand'], a:'Une personne qui se déplace continuellement pour se nourrir', e:'Les nomades sont des peuples sans habitat fixe qui suivent les ressources.' },
+      { q:'Quand la sédentarisation a-t-elle commencé?', o:['Au Moyen Âge','Il y a 10 000 ans avec la révolution néolithique','À la préhistoire récente','Il y a seulement 1 000 ans'], a:'Il y a 10 000 ans avec la révolution néolithique', e:'La révolution néolithique (Néolithique) a commencé il y a environ 10 000 ans. Cette période marque le passage décisif de la chasse-cueillette à l\'agriculture, permettant aux humains de s\'installer en permanence dans un lieu.' },
+      { q:'Qu\'est-ce que la révolution néolithique?', o:['Une guerre importante','Le passage de la chasse-cueillette à l\'agriculture','L\'invention des villes','L\'arrivée du fer'], a:'Le passage de la chasse-cueillette à l\'agriculture', e:'La révolution néolithique est une transformation majeure où les humains abandonnent la vie nomade pour cultiver des plantes et élever des animaux. Cela a permis l\'accumulation de surplus alimentaires et la création de sociétés plus complexes.' },
+      { q:'Quel était le mode de vie avant la sédentarisation?', o:['Agriculture intensive','Chasse, pêche et cueillette','Élevage organisé','Commerce international'], a:'Chasse, pêche et cueillette', e:'Les humains vivaient de la chasse, la pêche et la cueillette de fruits et plantes.' },
+      { q:'Qu\'est-ce que l\'agriculture?', o:['La gestion des forêts','La culture de plantes pour la nourriture','L\'étude des animaux','La construction de routes'], a:'La culture de plantes pour la nourriture', e:'L\'agriculture est la culture intentionnelle de plantes pour se nourrir.' },
+      { q:'Quel impact la sédentarisation a-t-elle eu sur la population?', o:['La population a diminué','La population a augmenté grâce à la sécurité alimentaire','La population s\'est enfuie','Il n\'y a pas eu d\'impact'], a:'La population a augmenté grâce à la sécurité alimentaire', e:'L\'agriculture permettait de nourrir plus de personnes en un lieu donné.' },
+      { q:'Où a commencé la sédentarisation?', o:['En Amérique du Nord','Au Croissant fertile (Moyen-Orient)','En Afrique du Sud','En Asie de l\'Est uniquement'], a:'Au Croissant fertile (Moyen-Orient)', e:'Le Croissant fertile (entre Tigre et Euphrate) est un des premiers foyers.' },
+      { q:'Quels animaux ont été les premiers à être domestiqués?', o:['Les dinosaures','Les chèvres, moutons et bovins','Les lions et les ours','Les poissons uniquement'], a:'Les chèvres, moutons et bovins', e:'Les humains ont d\'abord domestiqué les chèvres, moutons et bovins.' }
+    ]
+  },
+  {
+    id: 'civilisations', name: 'Premières Civilisations', icon: '🏛️', color: '#0e7490',
+    desc: 'Civilisations égyptienne, mésopotamienne et autres',
+    qs: [
+      { q:'Qu\'est-ce qui caractérise une civilisation?', o:['Juste une ville','Un gouvernement, une culture, une écriture et une technologie','Un climat chaud','Un seul chef'], a:'Un gouvernement, une culture, une écriture et une technologie', e:'Une civilisation a un gouvernement, une culture, une écriture et une technologie.' },
+      { q:'Quels sont les deux grands fleuves de la Mésopotamie?', o:['Le Nil et l\'Euphrate','Le Tigre et l\'Euphrate','Le Tigre et le Jourdain','L\'Indus et le Gange'], a:'Le Tigre et l\'Euphrate', e:'La Mésopotamie est située entre le Tigre et l\'Euphrate.' },
+      { q:'Où la civilisation égyptienne s\'est-elle développée?', o:['Au Proche-Orient','Le long du Nil','Près de la Méditerranée','À Mesopotamie'], a:'Le long du Nil', e:'L\'Égypte antique s\'est développée le long du fleuve Nil. Cette localisation était stratégique : le Nil fournissait l\'eau, permettait l\'irrigation et les crues annuelles enrichissaient les sols en nutriments.' },
+      { q:'Qui gouvernait l\'Égypte ancienne?', o:['Un roi','Un pharaon','Un président','Un conseiller'], a:'Un pharaon', e:'Le pharaon était le souverain suprême de l\'Égypte. Les Égyptiens le considéraient comme un dieu vivant, responsable de la prospérité et de l\'ordre (Ma\'at). Le pharaon détenait le pouvoir politique, religieux et militaire.' },
+      { q:'Qu\'est-ce qu\'une pyramide?', o:['Une montagne','Un édifice funéraire royal','Un temple religieux','Un marché'], a:'Un édifice funéraire royal', e:'Les pyramides étaient construites comme tombes pour les pharaons.' },
+      { q:'Qu\'était la civilisation sumérienne?', o:['Une culture nomade','Une civilisation mésopotamienne','Un empire grec','Une tribu africaine'], a:'Une civilisation mésopotamienne', e:'Les Sumériens ont créé une des premières civilisations en Mésopotamie.' },
+      { q:'Quel système d\'écriture les Égyptiens utilisaient-ils?', o:['L\'alphabet latin','Les hiéroglyphes','Les chiffres arabes','Les runes'], a:'Les hiéroglyphes', e:'Les hiéroglyphes étaient l\'écriture de l\'Égypte antique. Ils combinaient des symboles et des images représentant des objets et des sons. Les scribes égyptiens utilisaient les hiéroglyphes pour les textes religieux et officiels.' },
+      { q:'Quelle était la source d\'eau principale pour l\'Égypte?', o:['Les pluies abondantes','Le fleuve Nil','Les puits souterrains','Les canaux d\'irrigation venant de la mer'], a:'Le fleuve Nil', e:'Le Nil était vital pour l\'Égypte avec ses crues annuelles.' },
+      { q:'Quel est le rôle des scribes dans les civilisations anciennes?', o:['Guerriers','Personnes qui écrivaient et enregistraient l\'information','Agriculteurs','Musiciens'], a:'Personnes qui écrivaient et enregistraient l\'information', e:'Les scribes étaient essentiels pour maintenir les archives et la gouvernance.' },
+      { q:'Qu\'est-ce que le code de Hammurabi?', o:['Un système de nombres','Un code de lois mésopotamien','Une pyramide égyptienne','Une prière religieuse'], a:'Un code de lois mésopotamien', e:'Le code de Hammurabi était un des premiers codes de lois écrits.' }
+    ]
+  },
+  {
+    id: 'romanisation', name: 'Romanisation', icon: '🦅', color: '#7c2d12',
+    desc: 'L\'expansion de l\'Empire romain et son influence sur les peuples',
+    qs: [
+      { q:'Qu\'est-ce que la Romanisation?', o:['La construction de routes romaines','L\'adoption de la culture romaine par les peuples conquis','La création de la Grèce antique','L\'invention du latin'], a:'L\'adoption de la culture romaine par les peuples conquis', e:'La Romanisation est le processus par lequel les peuples conquis adoptent la culture, la langue et les institutions romaines.' },
+      { q:'Quel empire a dominé le monde méditerranéen?', o:['L\'empire égyptien','L\'empire grec','L\'empire romain','L\'empire perse'], a:'L\'empire romain', e:'Rome a construit un vaste empire qui a dominé le bassin méditerranéen pendant plusieurs siècles.' },
+      { q:'Quel était le centre de l\'Empire romain?', o:['La Grèce','Rome, en Italie','L\'Égypte','La Gaule'], a:'Rome, en Italie', e:'Rome, fondée sur la péninsule italienne, était le centre du pouvoir de l\'empire.' },
+      { q:'Qu\'est-ce que le Latin?', o:['Une ville romaine','La langue des Romains','Une région conquise','Un dieu romain'], a:'La langue des Romains', e:'Le Latin était la langue officielle de Rome. C\'est l\'ancêtre des langues romanes comme le français, l\'espagnol et l\'italien.' },
+      { q:'Quels peuples ont été romanisés?', o:['Seulement les Grecs','Les Égyptiens, Gaulois, Britanniques, Germains et autres peuples conquis','Les habitants de l\'Afrique uniquement','Aucun peuple'], a:'Les Égyptiens, Gaulois, Britanniques, Germains et autres peuples conquis', e:'Rome a conquis de vastes territoires et imposé sa culture à de nombreux peuples en Europe, Afrique et Asie.' },
+      { q:'Quel empereur romain a étendu l\'empire en Gaule?', o:['Auguste','Jules César','Néron','Trajan'], a:'Jules César', e:'Jules César a conquis la Gaule (actuelle France) entre 58 et 50 av. J.-C., l\'intégrant à l\'empire romain.' },
+      { q:'Qu\'est-ce qu\'un aqueduc romain?', o:['Une arme de guerre','Une structure pour transporter l\'eau sur longues distances','Un type de navire','Une religion'], a:'Une structure pour transporter l\'eau sur longues distances', e:'Les aqueducs romains apportaient de l\'eau fraîche des régions éloignées vers les villes. C\'est un exemple du génie romain.' },
+      { q:'Quel était le rôle des routes romaines?', o:['Servir uniquement aux touristes','Faciliter le commerce, le transport militaire et la communication','Décorer le paysage','Servir de murs de défense'], a:'Faciliter le commerce, le transport militaire et la communication', e:'Les routes romaines (via Romana) reliaient les provinces et facilitaient l\'administration de l\'empire.' },
+      { q:'Quel droit les Romains accordaient-ils aux provinciaux?', o:['Aucun droit','Le droit de légion','La citoyenneté romaine, progressivement accordée','Le droit de gouverner'], a:'La citoyenneté romaine, progressivement accordée', e:'Certains peuples et provinciaux recevaient la citoyenneté romaine, leur accordant des droits et des devoirs.' },
+      { q:'Comment la Romanisation a-t-elle affecté les cultures locales?', o:['Elle les a totalement détruites','Elle les a mélangées à la culture romaine, créant une culture synchrétique','Elle n\'a eu aucun effet','Elle les a renforcées'], a:'Elle les a mélangées à la culture romaine, créant une culture synchrétique', e:'La Romanisation a créé un mélange de cultures : les peuples conservaient des traditions locales tout en adoptant les pratiques romaines.' }
+    ]
+  },
+  {
+    id: 'democratie_athenienne', name: 'Démocratie Athénienne', icon: '🏺', color: '#1e40af',
+    desc: 'La naissance de la démocratie en Grèce antique',
+    qs: [
+      { q:'Qu\'est-ce que la démocratie?', o:['Le pouvoir d\'une seule personne','Le gouvernement du peuple','Le pouvoir des riches','L\'absence de gouvernement'], a:'Le gouvernement du peuple', e:'Démocratie signifie \"pouvoir du peuple\" (démos = peuple, kratos = pouvoir). C\'est un système où les citoyens participent aux décisions.' },
+      { q:'Où la démocratie a-t-elle d\'abord été pratiquée?', o:['Rome','Athènes (Grèce)','Égypte','Chine'], a:'Athènes (Grèce)', e:'Athènes en Grèce antique a créé le premier système démocratique.' },
+      { q:'Qui pouvait participer à la démocratie athénienne?', o:['Les femmes','Les esclaves','Les citoyens hommes libres adultes nés à Athènes','Tout le monde sans exception'], a:'Les citoyens hommes libres adultes nés à Athènes', e:'Seuls les hommes libres nés à Athènes, âgés de plus de 18 ans, avaient le droit de participer. Les femmes, les esclaves et les étrangers (métèques) en étaient exclus, ce qui montre les limites de la démocratie athénienne antique.' },
+      { q:'Qu\'est-ce que l\'Agora?', o:['Un type de gouvernement','Une place publique où le peuple se réunissait','Un temple religieux','Une école'], a:'Une place publique où le peuple se réunissait', e:'L\'Agora était le cœur de la vie civique athénienne.' },
+      { q:'Qu\'est-ce que l\'Ecclésia?', o:['Une église','L\'assemblée du peuple où se prenaient les décisions','Un théâtre','Une bibliothèque'], a:'L\'assemblée du peuple où se prenaient les décisions', e:'L\'Ecclésia était l\'assemblée démocratique athénienne où les citoyens se réunissaient régulièrement (environ 40 fois par an) pour voter sur les lois et les questions importantes. C\'est un exemple de démocratie directe.' },
+      { q:'Qu\'est-ce que l\'ostracisme?', o:['Une maladie','Un système de vote pour exiler quelqu\'un','Une forme de taxation','Une punition militaire'], a:'Un système de vote pour exiler quelqu\'un', e:'L\'ostracisme permettait aux Athéniens de voter l\'exil d\'une personne.' },
+      { q:'Quels sont les droits du citoyen athénien?', o:['Juste payer des taxes','Participer au gouvernement et avoir la parole libre','Rester silencieux','Obéir sans question'], a:'Participer au gouvernement et avoir la parole libre', e:'Les citoyens avaient le droit de voter et de s\'exprimer librement.' },
+      { q:'Comment les Athéniens prenaient-ils les décisions?', o:['Par un seul chef','Par vote direct de l\'assemblée','Par un sénat secret','Par lettre écrite'], a:'Par vote direct de l\'assemblée', e:'Athènes pratiquait la démocratie directe avec votes en assemblée.' },
+      { q:'Quel était le rôle de Solon en Athènes?', o:['Un guerrier','Un réformateur qui établit les bases de la démocratie','Un agriculteur','Un commerçant'], a:'Un réformateur qui établit les bases de la démocratie', e:'Solon (vers 640-558 av. J.-C.) était un réformateur athénien qui a aboli l\'esclavage pour dettes et créé les fondations de la démocratie athénienne. Ses réformes ont réduit le pouvoir de l\'aristocratie et donné plus de droits aux citoyens ordinaires.' },
+      { q:'Quels sont les obstacles à la démocratie athénienne antique?', o:['Le manque d\'organisations','L\'exclusion des femmes, esclaves et étrangers','Un gouvernement trop strict','La pauvreté'], a:'L\'exclusion des femmes, esclaves et étrangers', e:'Bien que novatrice, la démocratie athénienne excluait la majorité de la population.' }
+    ]
+  }
+];
+
+// ─── State ────────────────────────────────────────────────────
+let ST = { screen:'home', topic:null, qs:[], idx:0, answers:[], answered:false };
+const getScores = () => { try { return JSON.parse(localStorage.getItem('socialQ') || '{}'); } catch { return {}; } };
+const saveScore  = (id, s) => { const sc = getScores(); if (sc[id] === undefined || s > sc[id]) { sc[id]=s; localStorage.setItem('socialQ', JSON.stringify(sc)); } };
+
+// ─── Screens ──────────────────────────────────────────────────
+function show(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+// ─── Home ─────────────────────────────────────────────────────
+function initHome() {
+  document.getElementById('week-badge').textContent = weekLabel();
+  const sc = getScores();
+  const grid = document.getElementById('topics-grid');
+  grid.innerHTML = '';
+  TOPICS.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'topic-card';
+    el.style.setProperty('--tc', t.color);
+    const best = sc[t.id];
+    el.innerHTML = `
+      <div class="tc-icon">${t.icon}</div>
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-desc">${t.desc}</div>
+      <div class="tc-meta">
+        <span>10 questions · hebdo</span>
+        ${best!==undefined ? `<span class="tc-score">Meilleur : ${best}/10</span>` : '<span>Pas encore fait</span>'}
+      </div>`;
+    el.onclick = () => startQuiz(t.id);
+    grid.appendChild(el);
+  });
+}
+
+// ─── Start quiz ───────────────────────────────────────────────
+function startQuiz(id) {
+  const topic = TOPICS.find(t=>t.id===id);
+  if (!topic) return;
+  const rng = new SRNG(Date.now() ^ (Math.random() * 0x100000000));
+  const picked = rng.pick(topic.qs, 10);
+  const qs = picked.map(q => ({ ...q, o: rng.shuffle(q.o) }));
+  ST = { topic, qs, idx:0, answers:[], answered:false };
+  show('quiz-screen');
+  document.getElementById('quiz-title').textContent = `${topic.icon} ${topic.name}`;
+  renderQ();
+}
+function retryQuiz() { startQuiz(ST.topic.id); }
+
+// ─── Render question ──────────────────────────────────────────
+function renderQ() {
+  const { qs, idx } = ST;
+  const q = qs[idx];
+  document.getElementById('prog-fill').style.width = (idx / qs.length * 100) + '%';
+  document.getElementById('prog-txt').textContent = `${idx+1} / ${qs.length}`;
+
+  const container = document.getElementById('q-container');
+  container.innerHTML = `
+    <div class="q-card">
+      <div class="q-num">Question ${idx+1} sur ${qs.length}</div>
+      <div class="q-text" id="qtxt"></div>
+      <div class="opts-grid" id="opts"></div>
+      <div id="fb"></div>
+    </div>
+    <div id="nxt"></div>`;
+
+  document.getElementById('qtxt').textContent = q.q;
+
+  const LETTERS = ['A','B','C','D'];
+  const optsEl = document.getElementById('opts');
+  q.o.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<span class="opt-letter">${LETTERS[i]}</span><span class="opt-text"></span>`;
+    btn.querySelector('.opt-text').textContent = opt;
+    btn.onclick = () => pick(btn, opt);
+    optsEl.appendChild(btn);
+  });
+  ST.answered = false;
+}
+
+// ─── Pick ─────────────────────────────────────────────────────
+function pick(btn, val) {
+  if (ST.answered) return;
+  ST.answered = true;
+  const q = ST.qs[ST.idx];
+  const ok = val === q.a;
+  ST.answers.push({ q: q.q, sel: val, ok, correct: q.a, exp: q.e });
+
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.disabled = true;
+    const v = b.querySelector('.opt-text').textContent;
+    if (v === q.a) b.classList.add('correct');
+    else if (b === btn && !ok) b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('fb');
+  fb.className = `feedback ${ok ? 'ok' : 'err'}`;
+  const head = ok ? '✅ Bravo !' : `❌ Pas tout à fait — la bonne réponse est : ${q.a}`;
+  fb.innerHTML = `<strong></strong><br><small></small>`;
+  fb.querySelector('strong').textContent = head;
+  fb.querySelector('small').textContent = q.e;
+
+  const nxt = document.getElementById('nxt');
+  const isLast = ST.idx === ST.qs.length - 1;
+  const nxtBtn = document.createElement('button');
+  nxtBtn.className = 'next-btn';
+  nxtBtn.textContent = isLast ? '🏁 Voir les résultats' : 'Question suivante →';
+  nxtBtn.onclick = isLast ? showResults : nextQ;
+  nxt.appendChild(nxtBtn);
+}
+
+function nextQ() { ST.idx++; renderQ(); }
+
+// ─── Results ──────────────────────────────────────────────────
+function showResults() {
+  const score = ST.answers.filter(a=>a.ok).length;
+  saveScore(ST.topic.id, score);
+  show('results-screen');
+
+  const circ = 2 * Math.PI * 60;
+  const pct  = score / ST.qs.length;
+  const col  = pct >= .8 ? '#10b981' : pct >= .6 ? '#06b6d4' : '#ef4444';
+  const arc  = document.getElementById('score-arc');
+  arc.setAttribute('stroke', col);
+  arc.setAttribute('stroke-dasharray', circ);
+  arc.setAttribute('stroke-dashoffset', circ);
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-num').style.color = col;
+  setTimeout(() => {
+    arc.style.transition = 'stroke-dashoffset 1s ease';
+    arc.setAttribute('stroke-dashoffset', circ * (1 - pct));
+  }, 50);
+
+  const msgs = [[9,'🌟 Excellent!','Maîtrise parfaite de l\'univers social!'],[7,'🎉 Très bien!','Tu comprends bien ces sujets!'],[5,'💪 Pas mal!','Continue ta préparation pour l\'examen!'],[0,'📚 Continue!','Relis tes notes et réessaie!']];
+  const [,m,s] = msgs.find(([min]) => score >= min);
+  document.getElementById('res-msg').textContent = m;
+  document.getElementById('res-sub').textContent = s;
+
+  const rl = document.getElementById('review-list');
+  rl.innerHTML = '';
+  ST.answers.forEach((a, i) => {
+    const div = document.createElement('div');
+    div.className = 'rev-item';
+    div.innerHTML = `
+      <div class="rev-icon">${a.ok ? '✅' : '❌'}</div>
+      <div>
+        <div class="rev-q"><strong>Q${i+1}.</strong> <span class="rev-qtxt"></span></div>
+        <div class="rev-a rev-atxt"></div>
+      </div>`;
+    div.querySelector('.rev-qtxt').textContent = a.q;
+    if (a.ok) {
+      div.querySelector('.rev-atxt').innerHTML = `<span class="ok-ans">Bonne réponse : <span class="r"></span></span>`;
+      div.querySelector('.r').textContent = a.correct;
+    } else {
+      div.querySelector('.rev-atxt').innerHTML = `<span class="err-ans">Ta réponse : <span class="s"></span></span> · <span class="ok-ans">Bonne : <span class="c"></span></span>${a.exp ? '<div class="rev-exp"><span class="exp-txt"></span></div>' : ''}`;
+      div.querySelector('.s').textContent = a.sel;
+      div.querySelector('.c').textContent = a.correct;
+      if (a.exp) div.querySelector('.exp-txt').textContent = a.exp;
+    }
+    rl.appendChild(div);
+  });
+
+  sendResultEmail('Ziyad', ST.topic.name, score, ST.qs.length, ST.answers);
+  if (score >= 7) confetti();
+}
+
+// ─── EmailJS ──────────────────────────────────────────────────
+const EMAILJS_KEY      = 'CfrxX5NPbmE14wAmd';
+const EMAILJS_PRIVATE_KEY = 'ehJuYOOg6elSKdIKyKKTz';
+const EMAILJS_SERVICE  = 'service_NET_MAILS';
+const EMAILJS_TEMPLATE = 'template_xfpfs3g';
+
+function sendResultEmail(child, topic, score, total, answers) {
+  const pct = score / total;
+  const scoreColor = pct >= .8 ? '#10b981' : pct >= .6 ? '#06b6d4' : '#ef4444';
+  const medal = pct >= .9 ? '🏆' : pct >= .7 ? '🌟' : pct >= .5 ? '👍' : '💪';
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const rows = answers.map((a, i) =>
+    `<tr style="border-bottom:1px solid #e2e8f0;background:${a.ok?'#f0fdf4':'#fef2f2'}">
+      <td style="padding:12px 14px;font-size:20px;vertical-align:top;width:36px">${a.ok?'✅':'❌'}</td>
+      <td style="padding:12px 14px;font-family:sans-serif;vertical-align:top">
+        <div style="font-weight:600;color:#1e293b;margin-bottom:4px">Q${i+1}. ${esc(a.q)}</div>
+        <div style="font-size:13px;color:${a.ok?'#15803d':'#991b1b'}">Bonne réponse : <strong>${esc(a.correct)}</strong></div>
+      </td>
+    </tr>`
+  ).join('');
+  emailjs.init({ publicKey: EMAILJS_KEY, privateKey: EMAILJS_PRIVATE_KEY });
+  emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    child_name:  child,
+    quiz_topic:  topic,
+    score:       `${score} / ${total}`,
+    score_color: scoreColor,
+    medal:       medal,
+    date:        new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+    rows:        rows
+  })
+  .then(() => console.log('EmailJS : envoi réussi'))
+  .catch(e => console.warn('EmailJS : erreur', e));
+}
+
+function confetti() {
+  const cols = ['#06b6d4','#0891b2','#10b981','#ef4444','#60a5fa','#f472b6','#22d3ee'];
+  for (let i = 0; i < 70; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'conf';
+      const size = 6 + Math.random() * 9;
+      c.style.cssText = `left:${Math.random()*100}vw;top:-12px;width:${size}px;height:${size}px;background:${cols[~~(Math.random()*cols.length)]};animation-duration:${2+Math.random()*2}s;border-radius:${Math.random()>.5?'50%':'3px'}`;
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4500);
+    }, i * 45);
+  }
+}
+
+function goHome() { ST = {topic:null,qs:[],idx:0,answers:[],answered:false}; show('home-screen'); initHome(); }
+
+initHome();
+
+// ─── Register Service Worker (PWA) ───────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.log('SW error:', err));
+  });
+}
+</script>
+</body>
+</html>

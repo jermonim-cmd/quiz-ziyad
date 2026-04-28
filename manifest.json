@@ -53,6 +53,13 @@
       "description": "Quiz de français Brevet",
       "url": "./elyes_francais.html",
       "icons": [{ "src": "icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Ziyad — Univers Social",
+      "short_name": "Social",
+      "description": "Quiz d'univers social Sec 1",
+      "url": "./univers_social.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any" }]
     }
   ]
 }

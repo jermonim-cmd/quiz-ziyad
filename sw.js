@@ -7,6 +7,7 @@ const ASSETS = [
   './index.html',
   './decimaux.html',
   './science.html',
+  './univers_social.html',
   './elyes_maths.html',
   './elyes_francais.html',
   './elyes_sciences.html',
