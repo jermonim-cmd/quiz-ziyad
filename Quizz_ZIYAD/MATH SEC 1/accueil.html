@@ -59,12 +59,15 @@ body::before {
 .child-card.elyes  { border-top: 3px solid #f97316; }
 
 .child-avatar {
-  width: 60px; height: 60px; border-radius: 50%;
+  width: 80px; height: 80px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.8rem; margin-bottom: 14px;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,.1);
 }
 .ziyad .child-avatar { background: rgba(124,58,237,.18); }
 .elyes  .child-avatar { background: rgba(249,115,22,.18); }
+.child-avatar[src] { background: none; border: 3px solid rgba(255,255,255,.15); }
 
 .child-name {
   font-size: 1.5rem; font-weight: 800; margin-bottom: 4px;
@@ -137,7 +140,8 @@ footer {
 
   <!-- ── ZIYAD ── -->
   <div class="child-card ziyad">
-    <div class="child-avatar">🧒</div>
+    <img src="ziyad.jpg" class="child-avatar" alt="Ziyad" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+    <div class="child-avatar" style="display:none">🧒</div>
     <div class="child-name">Ziyad</div>
     <div class="child-level">
       <span class="level-badge">Secondaire 1</span>
