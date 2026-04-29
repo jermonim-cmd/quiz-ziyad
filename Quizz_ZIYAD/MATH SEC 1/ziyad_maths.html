@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📐 MathQuiz Sec 1 — Ziyad · Préparation Examens</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#06b6d4">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MathQuiz Ziyad">
+<link rel="apple-touch-icon" href="icon.svg">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<style>
+:root {
+  --bg: #0f0d08;
+  --card: #1e1a10;
+  --text: #f0e8d8;
+  --muted: #9a8f7a;
+  --success: #10b981;
+  --error: #ef4444;
+  --acc: #06b6d4;
+  --acc2: #0891b2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(6,182,212,.1) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(16,185,129,.07) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+.screen { position: relative; z-index: 1; min-height: 100vh; display: none; }
+.screen.active { display: block; }
+
+/* ── TOP NAV ── */
+.top-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: center; gap: 8px; padding: 10px 16px;
+  background: rgba(15,13,8,.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(6,182,212,.12);
+}
+.nav-tab {
+  padding: 7px 20px; border-radius: 20px; font-size: .85rem; font-weight: 600;
+  cursor: pointer; text-decoration: none; transition: all .2s; border: none; font-family: inherit;
+}
+.nav-tab.home { background: rgba(255,255,255,.07); color: var(--muted); border: 1px solid rgba(255,255,255,.12); }
+.nav-tab.home:hover { background: rgba(255,255,255,.14); color: var(--text); }
+
+/* ── HOME ── */
+.home-header { text-align: center; padding: 90px 20px 24px; }
+.home-header h1 {
+  font-size: clamp(2rem, 6vw, 3rem); font-weight: 900; letter-spacing: -1px;
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.home-header .sub { color: var(--muted); margin-top: 6px; font-size: 1rem; }
+.week-badge {
+  display: inline-block; margin-top: 14px;
+  background: rgba(6,182,212,.12); border: 1px solid rgba(6,182,212,.3);
+  border-radius: 20px; padding: 5px 18px; font-size: .8rem; color: #67e8f9;
+}
+.topics-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 16px; max-width: 960px; margin: 0 auto; padding: 16px 20px 60px;
+}
+.topic-card {
+  background: var(--card); border-radius: 18px; padding: 26px 24px;
+  cursor: pointer; border: 1px solid rgba(255,255,255,.05);
+  transition: transform .25s, box-shadow .25s, border-color .25s;
+  position: relative; overflow: hidden;
+}
+.topic-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--tc, #06b6d4);
+}
+.topic-card:hover {
+  transform: translateY(-5px); border-color: rgba(255,255,255,.12);
+  box-shadow: 0 24px 48px rgba(0,0,0,.4);
+}
+.tc-icon { font-size: 2.4rem; margin-bottom: 12px; }
+.tc-name { font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+.tc-desc { color: var(--muted); font-size: .83rem; line-height: 1.5; }
+.tc-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 16px; font-size: .78rem; color: var(--muted);
+}
+.tc-score {
+  background: rgba(6,182,212,.15); border-radius: 12px;
+  padding: 2px 10px; color: #67e8f9; font-weight: 600;
+}
+
+/* ── QUIZ ── */
+#quiz-screen { max-width: 720px; margin: 0 auto; padding: 80px 20px 60px; }
+.back-btn {
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+  color: var(--text); padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; font-size: .9rem; margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 6px; transition: background .2s; font-family: inherit;
+}
+.back-btn:hover { background: rgba(255,255,255,.1); }
+.quiz-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; }
+.quiz-info {
+  display: flex; gap: 12px; margin-top: 12px; margin-bottom: 18px;
+  flex-wrap: wrap; align-items: center;
+}
+.score-badge {
+  background: rgba(6,182,212,.15); border: 1px solid rgba(6,182,212,.3);
+  border-radius: 8px; padding: 6px 12px; font-size: .9rem; color: #67e8f9;
+  font-weight: 700;
+}
+.prog-row { display: flex; align-items: center; gap: 12px; }
+.prog-bar { flex: 1; height: 7px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg, #06b6d4, #0891b2); border-radius: 4px; transition: width .45s ease; }
+.prog-txt { font-size: .82rem; color: var(--muted); white-space: nowrap; }
+
+.q-card {
+  background: var(--card); border-radius: 20px; padding: 30px 28px;
+  border: 1px solid rgba(255,255,255,.05); margin-top: 22px;
+  animation: fadeUp .35s ease;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.q-num { font-size: .75rem; color: #67e8f9; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+.q-text { font-size: 1.15rem; font-weight: 500; line-height: 1.65; margin-bottom: 24px; }
+.opts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+@media (max-width: 480px) { .opts-grid { grid-template-columns: 1fr; } }
+
+.opt-btn {
+  background: rgba(255,255,255,.04); border: 2px solid rgba(255,255,255,.07);
+  border-radius: 12px; padding: 14px 18px; cursor: pointer; color: var(--text);
+  font-size: .98rem; text-align: left; display: flex; align-items: center;
+  gap: 12px; transition: background .18s, border-color .18s; font-family: inherit;
+}
+.opt-btn:hover:not(:disabled) {
+  background: rgba(6,182,212,.12); border-color: rgba(6,182,212,.45);
+}
+.opt-btn.correct { background: rgba(16,185,129,.14); border-color: #10b981; }
+.opt-btn.wrong   { background: rgba(239,68,68,.14);  border-color: #ef4444;  }
+.opt-btn:disabled { cursor: default; }
+.opt-letter {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,.08); display: flex; align-items: center;
+  justify-content: center; font-size: .82rem; font-weight: 700;
+}
+.opt-btn.correct .opt-letter { background: rgba(16,185,129,.3); }
+.opt-btn.wrong   .opt-letter { background: rgba(239,68,68,.3); }
+
+.feedback {
+  margin-top: 16px; padding: 14px 18px; border-radius: 12px;
+  font-size: .92rem; line-height: 1.55; animation: fadeUp .3s ease;
+}
+.feedback.ok  { background: rgba(16,185,129,.1);  border: 1px solid rgba(16,185,129,.3);  color: #6ee7b7; }
+.feedback.err { background: rgba(239,68,68,.1);   border: 1px solid rgba(239,68,68,.3);   color: #fca5a5; }
+.next-btn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  border: none; border-radius: 13px; color: #050f1a;
+  font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: opacity .2s, transform .2s;
+}
+.next-btn:hover { opacity: .9; transform: translateY(-1px); }
+
+/* ── RESULTS ── */
+#results-screen { max-width: 620px; margin: 0 auto; padding: 80px 20px 60px; }
+.res-top { text-align: center; padding: 20px 0 28px; }
+.score-wrap {
+  position: relative; width: 150px; height: 150px; margin: 0 auto 22px;
+}
+.score-svg { transform: rotate(-90deg); }
+.score-bg  { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 12; }
+.score-arc { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.score-inner {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.score-num { font-size: 2.8rem; font-weight: 900; line-height: 1; }
+.score-den { font-size: .85rem; color: var(--muted); }
+.res-msg { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+.res-sub { color: var(--muted); margin-bottom: 30px; }
+
+.review-list { display: flex; flex-direction: column; gap: 11px; margin-bottom: 24px; }
+.rev-item {
+  background: var(--card); border-radius: 13px; padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.05); display: flex; gap: 12px; align-items: flex-start;
+}
+.rev-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+.rev-q { font-size: .88rem; margin-bottom: 4px; line-height: 1.4; }
+.rev-a { font-size: .8rem; }
+.ok-ans  { color: #10b981; }
+.err-ans { color: #ef4444; }
+.rev-exp { margin-top: 5px; font-size: .78rem; color: #a78bfa; font-style: italic; line-height: 1.4; }
+
+.res-actions { display: flex; flex-direction: column; gap: 11px; }
+.act-btn {
+  padding: 14px; border-radius: 13px; font-size: 1rem; font-weight: 700;
+  cursor: pointer; border: none; font-family: inherit; transition: opacity .2s, transform .2s; width: 100%;
+}
+.act-btn:hover { opacity: .9; transform: translateY(-1px); }
+.act-primary { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #050f1a; }
+.act-secondary { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: var(--text); }
+
+/* confetti */
+.conf { position: fixed; border-radius: 3px; animation: fall linear forwards; z-index: 9999; pointer-events: none; }
+@keyframes fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <a href="accueil.html" class="nav-tab home">🏠 Accueil</a>
+</nav>
+
+<!-- HOME -->
+<div id="home-screen" class="screen active">
+  <div class="home-header">
+    <h1>📐 MathQuiz Sec 1</h1>
+    <p class="sub">Préparation complète aux examens finaux · Québec</p>
+    <div class="week-badge" id="week-badge"></div>
+  </div>
+  <div class="topics-grid" id="topics-grid"></div>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz-screen" class="screen">
+  <div style="display:flex;gap:10px;margin-bottom:18px">
+    <button class="back-btn" style="margin-bottom:0" onclick="goHome()">← Sujets</button>
+    <a href="accueil.html" class="back-btn" style="text-decoration:none;margin-bottom:0">🏠 Accueil</a>
+  </div>
+  <div class="quiz-title" id="quiz-title"></div>
+  <div class="quiz-info">
+    <div class="prog-row" style="flex: 1;">
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <span class="prog-txt" id="prog-txt"></span>
+    </div>
+    <div class="score-badge" id="score-badge">0/10</div>
+  </div>
+  <div id="q-container"></div>
+</div>
+
+<!-- RESULTS -->
+<div id="results-screen" class="screen">
+  <div class="res-top">
+    <div class="score-wrap">
+      <svg class="score-svg" width="150" height="150" viewBox="0 0 150 150">
+        <circle class="score-bg" cx="75" cy="75" r="60"/>
+        <circle class="score-arc" id="score-arc" cx="75" cy="75" r="60"
+          stroke="#06b6d4" stroke-dasharray="377" stroke-dashoffset="377"/>
+      </svg>
+      <div class="score-inner">
+        <div class="score-num" id="score-num">0</div>
+        <div class="score-den">sur 10</div>
+      </div>
+    </div>
+    <div class="res-msg" id="res-msg"></div>
+    <div class="res-sub" id="res-sub"></div>
+  </div>
+  <div class="review-list" id="review-list"></div>
+  <div class="res-actions">
+    <button class="act-btn act-primary"   onclick="retryQuiz()">🔄 Recommencer ce quiz</button>
+    <button class="act-btn act-secondary" onclick="goHome()">🏠 Choisir un autre sujet</button>
+  </div>
+</div>
+
+<script>
+// ─── Seeded RNG ───────────────────────────────────────────────
+function SRNG(seed) {
+  let s = seed >>> 0;
+  this.next = () => { s = Math.imul(1664525, s) + 1013904223 >>> 0; return s / 0x100000000; };
+  this.int  = n => Math.floor(this.next() * n);
+  this.shuffle = a => {
+    const r = [...a];
+    for (let i = r.length - 1; i > 0; i--) { const j = this.int(i+1); [r[i],r[j]]=[r[j],r[i]]; }
+    return r;
+  };
+  this.pick = (a, n) => this.shuffle(a).slice(0, n);
+}
+function weekSeed() {
+  const d = new Date(), jan = new Date(d.getFullYear(), 0, 1);
+  const wk = Math.floor((d - jan) / 86400000 / 7);
+  return d.getFullYear() * 100 + wk;
+}
+function weekLabel() {
+  const d = new Date(), jan = new Date(d.getFullYear(), 0, 1);
+  const wk = Math.floor((d - jan) / 86400000 / 7) + 1;
+  return `Semaine ${wk} · ${d.getFullYear()}`;
+}
+
+// ─── Question Bank ────────────────────────────────────────────
+const TOPICS = [
+  {
+    id: 'addition', name: 'Addition et soustraction', icon: '➕', color: '#f59e0b',
+    desc: 'Additionner et soustraire des nombres décimaux avec précision',
+    qs: [
+      { q:'3,5 + 2,4 = ?',               o:['5,9','6,9','5,7','6,0'],    a:'5,9',   e:'3,5 + 2,4 = 5,9. Aligne les virgules et additionne colonne par colonne.' },
+      { q:'12,75 − 4,3 = ?',             o:['8,45','8,35','7,45','9,45'],a:'8,45',  e:'12,75 − 4,30 = 8,45. On ajoute un zéro à 4,3 pour aligner les décimales.' },
+      { q:'0,8 + 0,35 = ?',              o:['1,15','0,43','1,35','0,115'],a:'1,15', e:'0,80 + 0,35 = 1,15. Aligne : 8+3=11, on pose 1 et on retient 1.' },
+      { q:'7,2 − 4,56 = ?',              o:['2,64','3,64','2,76','3,36'],a:'2,64',  e:'7,20 − 4,56 = 2,64.' },
+      { q:'9,99 + 0,01 = ?',             o:['9,10','10,00','9,91','10,10'],a:'10,00',e:'9,99 + 0,01 = 10,00. Les centièmes donnent 100 centièmes = 1 unité.' },
+      { q:'15,4 − 8,75 = ?',             o:['7,35','6,65','6,35','7,65'],a:'6,65',  e:'15,40 − 8,75 = 6,65.' },
+      { q:'3,14 + 2,86 = ?',             o:['6,00','5,90','6,10','5,00'],a:'6,00',  e:'3,14 + 2,86 = 6,00. Les centièmes 4+6=10, et les dixièmes 1+8+1=10.' },
+      { q:'100 − 0,1 = ?',               o:['99,9','100,1','99,0','99,01'],a:'99,9',e:'100,0 − 0,1 = 99,9.' },
+      { q:'7,03 − 3,9 = ?',              o:['4,13','3,13','3,03','4,03'],a:'3,13',  e:'7,03 − 3,90 = 3,13.' },
+      { q:'6,25 + 1,75 = ?',             o:['7,90','8,00','8,10','7,00'],a:'8,00',  e:'6,25 + 1,75 = 8,00.' }
+    ]
+  },
+  {
+    id: 'multiplication', name: 'Multiplication', icon: '✖️', color: '#ea580c',
+    desc: 'Multiplier des nombres décimaux et placer la virgule',
+    qs: [
+      { q:'3,2 × 4 = ?',                 o:['12,8','12,2','13,2','10,8'],a:'12,8',  e:'32 × 4 = 128, puis on place la virgule : 1 décimale → 12,8.' },
+      { q:'0,5 × 8 = ?',                 o:['0,4','40,0','4,0','0,04'],  a:'4,0',   e:'5 × 8 = 40, 1 décimale → 4,0.' },
+      { q:'2,5 × 2,5 = ?',               o:['5,0','6,25','5,25','6,0'],  a:'6,25',  e:'25 × 25 = 625, 2 décimales → 6,25.' },
+      { q:'0,3 × 0,3 = ?',               o:['0,9','0,09','0,6','9,0'],   a:'0,09',  e:'3 × 3 = 9, 2 décimales → 0,09.' },
+      { q:'4,5 × 6 = ?',                 o:['24,0','25,5','27,0','24,5'],a:'27,0',  e:'45 × 6 = 270, 1 décimale → 27,0.' },
+      { q:'0,25 × 4 = ?',                o:['0,10','1,00','10,00','2,50'],a:'1,00', e:'25 × 4 = 100, 2 décimales → 1,00.' },
+      { q:'3,14 × 2 = ?',                o:['6,24','6,28','6,18','7,14'],a:'6,28',  e:'314 × 2 = 628, 2 décimales → 6,28.' },
+      { q:'0,1 × 0,1 = ?',               o:['0,1','0,01','0,001','1,0'], a:'0,01',  e:'Multiplier par 0,1 = diviser par 10. 0,1 ÷ 10 = 0,01.' },
+      { q:'7,5 × 8 = ?',                 o:['56,0','60,0','64,0','58,0'],a:'60,0',  e:'75 × 8 = 600, 1 décimale → 60,0.' },
+      { q:'0,6 × 0,5 = ?',               o:['0,30','3,0','0,11','0,03'], a:'0,30',  e:'6 × 5 = 30, 2 décimales → 0,30.' }
+    ]
+  },
+  {
+    id: 'division', name: 'Division', icon: '➗', color: '#db2777',
+    desc: 'Diviser des nombres décimaux et interpréter les résultats',
+    qs: [
+      { q:'6,4 ÷ 2 = ?',                 o:['3,2','32,0','0,32','3,02'],a:'3,2',   e:'64 ÷ 2 = 32, 1 décimale → 3,2.' },
+      { q:'0,9 ÷ 3 = ?',                 o:['0,03','0,3','3,0','30,0'], a:'0,3',   e:'9 ÷ 3 = 3, 1 décimale → 0,3.' },
+      { q:'7,5 ÷ 5 = ?',                 o:['0,15','15,0','1,5','1,05'],a:'1,5',   e:'75 ÷ 5 = 15, 1 décimale → 1,5.' },
+      { q:'15 ÷ 0,5 = ?',                o:['7,5','30,0','0,075','3,0'],a:'30,0',  e:'Diviser par 0,5 = multiplier par 2. 15 × 2 = 30.' },
+      { q:'4,8 ÷ 0,8 = ?',               o:['0,6','6,0','0,06','60,0'], a:'6,0',   e:'4,8 ÷ 0,8 = 48 ÷ 8 = 6.' },
+      { q:'9 ÷ 0,3 = ?',                 o:['3','30','0,3','0,03'],     a:'30',    e:'Diviser par 0,3 = multiplier par 10/3. 9 ÷ 0,3 = 90 ÷ 3 = 30.' },
+      { q:'8,4 ÷ 4 = ?',                 o:['2,1','21,0','0,21','2,4'], a:'2,1',   e:'84 ÷ 4 = 21, 1 décimale → 2,1.' },
+      { q:'0,5 ÷ 0,25 = ?',              o:['0,125','2,0','0,2','5,0'], a:'2,0',   e:'0,5 ÷ 0,25 = 50 ÷ 25 = 2.' },
+      { q:'6,6 ÷ 3 = ?',                 o:['2,0','2,2','0,22','22,0'], a:'2,2',   e:'66 ÷ 3 = 22, 1 décimale → 2,2.' },
+      { q:'3,6 ÷ 0,9 = ?',               o:['0,4','4,0','40,0','0,04'], a:'4,0',   e:'3,6 ÷ 0,9 = 36 ÷ 9 = 4.' }
+    ]
+  },
+  {
+    id: 'fractions', name: 'Fractions ↔ Décimaux', icon: '🔁', color: '#7c3aed',
+    desc: 'Convertir entre fractions et nombres décimaux',
+    qs: [
+      { q:'1/2 = ?',                   o:['0,25','0,5','0,75','0,12'],  a:'0,5',  e:'1 ÷ 2 = 0,5.' },
+      { q:'1/4 = ?',                   o:['0,14','0,25','0,4','0,5'],   a:'0,25', e:'1 ÷ 4 = 0,25.' },
+      { q:'3/4 = ?',                   o:['0,34','0,7','0,75','0,80'],  a:'0,75', e:'3 ÷ 4 = 0,75.' },
+      { q:'1/5 = ?',                   o:['0,1','0,15','0,2','0,5'],    a:'0,2',  e:'1 ÷ 5 = 0,2.' },
+      { q:'3/5 = ?',                   o:['0,35','0,6','0,3','0,53'],   a:'0,6',  e:'3 ÷ 5 = 0,6.' },
+      { q:'2/5 = ?',                   o:['0,25','0,4','0,5','0,04'],   a:'0,4',  e:'2 ÷ 5 = 0,4.' },
+      { q:'0,5 = ?',                   o:['1/4','1/3','1/2','2/5'],     a:'1/2',  e:'0,5 = 50/100 = 1/2.' },
+      { q:'0,25 = ?',                  o:['1/4','1/5','1/2','2/5'],     a:'1/4',  e:'0,25 = 25/100 = 1/4.' },
+      { q:'0,75 = ?',                  o:['3/4','7/5','3/5','7/10'],    a:'3/4',  e:'0,75 = 75/100 = 3/4.' },
+      { q:'0,2 = ?',                   o:['2/10 = 1/5','1/2','2/100','1/10'], a:'2/10 = 1/5', e:'0,2 = 2/10 = 1/5.' }
+    ]
+  },
+  {
+    id: 'pourcentages', name: 'Pourcentages', icon: '%️', color: '#8b5cf6',
+    desc: 'Calculer et interpréter les pourcentages',
+    qs: [
+      { q:'50% de 100 = ?',              o:['25','50','75','100'],      a:'50',   e:'50/100 × 100 = 50.' },
+      { q:'25% de 80 = ?',               o:['15','20','25','30'],       a:'20',   e:'25/100 × 80 = 20.' },
+      { q:'10% de 50 = ?',               o:['5','10','15','50'],        a:'5',    e:'10/100 × 50 = 5.' },
+      { q:'20% de 150 = ?',              o:['20','25','30','40'],       a:'30',   e:'20/100 × 150 = 30.' },
+      { q:'75% de 200 = ?',              o:['100','150','200','250'],   a:'150',  e:'75/100 × 200 = 150.' },
+      { q:'33% de 99 ≈ ?',               o:['30','33','35','40'],       a:'33',   e:'33/100 × 99 ≈ 33.' },
+      { q:'40% de 25 = ?',               o:['5','10','15','20'],        a:'10',   e:'40/100 × 25 = 10.' },
+      { q:'5% de 200 = ?',               o:['5','10','15','20'],        a:'10',   e:'5/100 × 200 = 10.' },
+      { q:'0,5 = ? %',                   o:['50%','5%','0,5%','500%'],  a:'50%',  e:'0,5 = 50/100 = 50%.' },
+      { q:'Quel % de 20 donne 5 ?',      o:['10%','25%','50%','75%'],   a:'25%',  e:'? / 100 × 20 = 5 → ? = 25.' }
+    ]
+  },
+  {
+    id: 'geometrie', name: 'Géométrie', icon: '📐', color: '#16a34a',
+    desc: 'Angles, triangles, périmètres et aires',
+    qs: [
+      { q:'Somme des angles d\'un triangle = ?',      o:['90°','180°','270°','360°'],     a:'180°', e:'La somme des angles internes d\'un triangle est toujours 180°.' },
+      { q:'Angle droit = ?',                          o:['45°','90°','180°','360°'],      a:'90°',  e:'Un angle droit mesure 90 degrés.' },
+      { q:'Angle plat = ?',                           o:['90°','180°','270°','360°'],     a:'180°', e:'Un angle plat (ligne droite) mesure 180°.' },
+      { q:'Périmètre d\'un carré de côté 5 = ?',     o:['5','10','15','20'],             a:'20',   e:'P = 4 × 5 = 20.' },
+      { q:'Aire d\'un carré de côté 4 = ?',          o:['8','12','16','20'],             a:'16',   e:'A = 4 × 4 = 16.' },
+      { q:'Aire d\'un rectangle 6×4 = ?',            o:['10','20','24','30'],            a:'24',   e:'A = 6 × 4 = 24.' },
+      { q:'Périmètre d\'un rectangle 5×3 = ?',       o:['8','15','16','30'],             a:'16',   e:'P = 2(5+3) = 16.' },
+      { q:'Aire d\'un triangle base=6, h=4 = ?',     o:['12','24','48','60'],            a:'12',   e:'A = (6×4)/2 = 12.' },
+      { q:'Pythagore : 3-4-? triangle rectangle',     o:['5','6','7','8'],                a:'5',    e:'3² + 4² = 9 + 16 = 25 = 5². Donc ? = 5.' },
+      { q:'Périmètre d\'un cercle r=2 ≈ ?',          o:['6','12','13','25'],             a:'12',   e:'P = 2πr ≈ 2×3,14×2 ≈ 12,56 ≈ 12.' }
+    ]
+  },
+  {
+    id: 'algebre', name: 'Algèbre et équations', icon: '𝑥', color: '#dc2626',
+    desc: 'Expressions algébriques et résolution d\'équations',
+    qs: [
+      { q:'Résoudre : x + 5 = 12',      o:['5','7','12','17'],         a:'7',    e:'x = 12 - 5 = 7.' },
+      { q:'Résoudre : 2x = 10',         o:['5','10','20','2'],         a:'5',    e:'x = 10 ÷ 2 = 5.' },
+      { q:'Résoudre : x - 3 = 8',       o:['5','8','11','3'],          a:'11',   e:'x = 8 + 3 = 11.' },
+      { q:'Résoudre : 3x + 2 = 11',     o:['2','3','9','13'],          a:'3',    e:'3x = 11 - 2 = 9, x = 9 ÷ 3 = 3.' },
+      { q:'Simplifier : 2x + 3x = ?',   o:['5','5x','6x','x'],         a:'5x',   e:'2x + 3x = (2+3)x = 5x.' },
+      { q:'Développer : 2(x+3) = ?',    o:['2x+3','2x+6','2x+2','2+6'],a:'2x+6', e:'2(x+3) = 2×x + 2×3 = 2x+6.' },
+      { q:'Résoudre : x/2 = 5',         o:['2','5','10','25'],         a:'10',   e:'x = 5 × 2 = 10.' },
+      { q:'Résoudre : 4x - 1 = 7',      o:['1','2','3','4'],           a:'2',    e:'4x = 7 + 1 = 8, x = 8 ÷ 4 = 2.' },
+      { q:'Factoriser : 4x + 8 = ?',    o:['4(x+2)','4(x+1)','2(x+4)','x+8'], a:'4(x+2)', e:'4x + 8 = 4(x + 2). On factorise le 4.' },
+      { q:'Si x=3, alors 2x+1 = ?',     o:['5','7','9','13'],          a:'7',    e:'2(3) + 1 = 6 + 1 = 7.' }
+    ]
+  },
+  {
+    id: 'statistiques', name: 'Statistiques et probabilités', icon: '📊', color: '#0891b2',
+    desc: 'Moyenne, médiane, mode et probabilités',
+    qs: [
+      { q:'Moyenne de 2, 4, 6 = ?',     o:['3','4','5','6'],           a:'4',    e:'(2+4+6)/3 = 12/3 = 4.' },
+      { q:'Médiane de 1, 3, 5, 7 = ?',  o:['3','4','5','6'],           a:'4',    e:'Valeur du milieu entre 3 et 5 = (3+5)/2 = 4.' },
+      { q:'Mode de 2, 2, 3, 4 = ?',     o:['2','3','4','2,75'],        a:'2',    e:'Le mode est la valeur qui revient le plus souvent = 2.' },
+      { q:'Moyenne de 10, 20, 30 = ?',  o:['15','20','25','60'],       a:'20',   e:'(10+20+30)/3 = 60/3 = 20.' },
+      { q:'Probabilité : face pile ?',  o:['0','25%','50%','100%'],    a:'50%',  e:'Il y a 2 résultats possibles (face, pile) = 1/2 = 50%.' },
+      { q:'Dé : proba d\'avoir 6 = ?',  o:['1/2','1/3','1/6','1/4'],   a:'1/6',  e:'Un dé a 6 faces, une seule donne 6 = 1/6.' },
+      { q:'Médiane de 2, 4, 6, 8 = ?',  o:['5','6','7','8'],           a:'5',    e:'Valeur du milieu entre 4 et 6 = (4+6)/2 = 5.' },
+      { q:'Moyenne de 5, 5, 5 = ?',     o:['0','5','15','25'],         a:'5',    e:'(5+5+5)/3 = 15/3 = 5.' },
+      { q:'Mode de 1, 2, 3, 3, 3 = ?',  o:['1','2','3','2,4'],         a:'3',    e:'3 revient 3 fois, c\'est le mode.' },
+      { q:'Proba : carte rouge deck 52 ?', o:['1/4','1/2','1/13','1/26'], a:'1/2', e:'26 cartes rouges sur 52 = 26/52 = 1/2 = 50%.' }
+    ]
+  }
+];
+
+// ─── State ────────────────────────────────────────────────────
+let ST = { screen:'home', topic:null, qs:[], idx:0, answers:[], answered:false, correct:0 };
+const getScores = () => { try { return JSON.parse(localStorage.getItem('mathQ') || '{}'); } catch { return {}; } };
+const saveScore  = (id, s) => { const sc = getScores(); if (sc[id] === undefined || s > sc[id]) { sc[id]=s; localStorage.setItem('mathQ', JSON.stringify(sc)); } };
+
+// ─── Screens ──────────────────────────────────────────────────
+function show(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+// ─── Home ─────────────────────────────────────────────────────
+function initHome() {
+  document.getElementById('week-badge').textContent = weekLabel();
+  const sc = getScores();
+  const grid = document.getElementById('topics-grid');
+  grid.innerHTML = '';
+  TOPICS.forEach(t => {
+    const el = document.createElement('div');
+    el.className = 'topic-card';
+    el.style.setProperty('--tc', t.color);
+    const best = sc[t.id];
+    el.innerHTML = `
+      <div class="tc-icon">${t.icon}</div>
+      <div class="tc-name">${t.name}</div>
+      <div class="tc-desc">${t.desc}</div>
+      <div class="tc-meta">
+        <span>10 questions · hebdo</span>
+        ${best!==undefined ? `<span class="tc-score">Meilleur : ${best}/10</span>` : '<span>Pas encore fait</span>'}
+      </div>`;
+    el.onclick = () => startQuiz(t.id);
+    grid.appendChild(el);
+  });
+}
+
+// ─── Start quiz ───────────────────────────────────────────────
+function startQuiz(id) {
+  const topic = TOPICS.find(t=>t.id===id);
+  if (!topic) return;
+  const rng = new SRNG(Date.now() ^ (Math.random() * 0x100000000));
+  const picked = rng.pick(topic.qs, 10);
+  const qs = picked.map(q => ({ ...q, o: rng.shuffle(q.o) }));
+  ST = { topic, qs, idx:0, answers:[], answered:false, correct:0 };
+  show('quiz-screen');
+  document.getElementById('quiz-title').textContent = `${topic.icon} ${topic.name}`;
+  renderQ();
+}
+function retryQuiz() { startQuiz(ST.topic.id); }
+
+// ─── Render question ──────────────────────────────────────────
+function renderQ() {
+  const { qs, idx, correct } = ST;
+  const q = qs[idx];
+  document.getElementById('prog-fill').style.width = (idx / qs.length * 100) + '%';
+  document.getElementById('prog-txt').textContent = `${idx+1} / ${qs.length}`;
+  document.getElementById('score-badge').textContent = `${correct}/${qs.length}`;
+
+  const container = document.getElementById('q-container');
+  container.innerHTML = `
+    <div class="q-card">
+      <div class="q-num">Question ${idx+1} sur ${qs.length}</div>
+      <div class="q-text" id="qtxt"></div>
+      <div class="opts-grid" id="opts"></div>
+      <div id="fb"></div>
+    </div>
+    <div id="nxt"></div>`;
+
+  document.getElementById('qtxt').textContent = q.q;
+
+  const LETTERS = ['A','B','C','D'];
+  const optsEl = document.getElementById('opts');
+  q.o.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<span class="opt-letter">${LETTERS[i]}</span><span class="opt-text"></span>`;
+    btn.querySelector('.opt-text').textContent = opt;
+    btn.onclick = () => pick(btn, opt);
+    optsEl.appendChild(btn);
+  });
+  ST.answered = false;
+}
+
+// ─── Pick ─────────────────────────────────────────────────────
+function pick(btn, val) {
+  if (ST.answered) return;
+  ST.answered = true;
+  const q = ST.qs[ST.idx];
+  const ok = val === q.a;
+  if (ok) ST.correct++;
+  ST.answers.push({ q: q.q, sel: val, ok, correct: q.a, exp: q.e });
+
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    b.disabled = true;
+    const v = b.querySelector('.opt-text').textContent;
+    if (v === q.a) b.classList.add('correct');
+    else if (b === btn && !ok) b.classList.add('wrong');
+  });
+
+  const fb = document.getElementById('fb');
+  fb.className = `feedback ${ok ? 'ok' : 'err'}`;
+  const head = ok ? '✅ Bravo !' : `❌ Pas tout à fait — la bonne réponse est : ${q.a}`;
+  fb.innerHTML = `<strong></strong><br><small></small>`;
+  fb.querySelector('strong').textContent = head;
+  fb.querySelector('small').textContent = q.e;
+
+  const nxt = document.getElementById('nxt');
+  const isLast = ST.idx === ST.qs.length - 1;
+  const nxtBtn = document.createElement('button');
+  nxtBtn.className = 'next-btn';
+  nxtBtn.textContent = isLast ? '🏁 Voir les résultats' : 'Question suivante →';
+  nxtBtn.onclick = isLast ? showResults : nextQ;
+  nxt.appendChild(nxtBtn);
+}
+
+function nextQ() { ST.idx++; renderQ(); }
+
+// ─── Results ──────────────────────────────────────────────────
+function showResults() {
+  const score = ST.correct;
+  saveScore(ST.topic.id, score);
+  show('results-screen');
+
+  const circ = 2 * Math.PI * 60;
+  const pct  = score / ST.qs.length;
+  const col  = pct >= .8 ? '#10b981' : pct >= .6 ? '#06b6d4' : '#ef4444';
+  const arc  = document.getElementById('score-arc');
+  arc.setAttribute('stroke', col);
+  arc.setAttribute('stroke-dasharray', circ);
+  arc.setAttribute('stroke-dashoffset', circ);
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('score-num').style.color = col;
+  setTimeout(() => {
+    arc.style.transition = 'stroke-dashoffset 1s ease';
+    arc.setAttribute('stroke-dashoffset', circ * (1 - pct));
+  }, 50);
+
+  const msgs = [[9,'🌟 Excellent!','Maîtrise parfaite !'],[7,'🎉 Très bien!','Continue, tu es sur la bonne voie!'],[5,'💪 Pas mal!','Encore un peu de pratique!'],[0,'📚 Continue!','Relis tes notes et réessaie!']];
+  const [,m,s] = msgs.find(([min]) => score >= min);
+  document.getElementById('res-msg').textContent = m;
+  document.getElementById('res-sub').textContent = s;
+
+  const rl = document.getElementById('review-list');
+  rl.innerHTML = '';
+  ST.answers.forEach((a, i) => {
+    const div = document.createElement('div');
+    div.className = 'rev-item';
+    div.innerHTML = `
+      <div class="rev-icon">${a.ok ? '✅' : '❌'}</div>
+      <div>
+        <div class="rev-q"><strong>Q${i+1}.</strong> <span class="rev-qtxt"></span></div>
+        <div class="rev-a rev-atxt"></div>
+      </div>`;
+    div.querySelector('.rev-qtxt').textContent = a.q;
+    if (a.ok) {
+      div.querySelector('.rev-atxt').innerHTML = `<span class="ok-ans">Bonne réponse : <span class="r"></span></span>`;
+      div.querySelector('.r').textContent = a.correct;
+    } else {
+      div.querySelector('.rev-atxt').innerHTML = `<span class="err-ans">Ta réponse : <span class="s"></span></span> · <span class="ok-ans">Bonne : <span class="c"></span></span>${a.exp ? '<div class="rev-exp"><span class="exp-txt"></span></div>' : ''}`;
+      div.querySelector('.s').textContent = a.sel;
+      div.querySelector('.c').textContent = a.correct;
+      if (a.exp) div.querySelector('.exp-txt').textContent = a.exp;
+    }
+    rl.appendChild(div);
+  });
+
+  sendResultEmail('Ziyad', ST.topic.name, score, ST.qs.length, ST.answers);
+  if (score >= 7) confetti();
+}
+
+// ─── EmailJS ──────────────────────────────────────────────────
+const EMAILJS_KEY      = 'CfrxX5NPbmE14wAmd';
+const EMAILJS_PRIVATE_KEY = 'ehJuYOOg6elSKdIKyKKTz';
+const EMAILJS_SERVICE  = 'service_NET_MAILS';
+const EMAILJS_TEMPLATE = 'template_xfpfs3g';
+
+function sendResultEmail(child, topic, score, total, answers) {
+  const pct = score / total;
+  const scoreColor = pct >= .8 ? '#10b981' : pct >= .6 ? '#06b6d4' : '#ef4444';
+  const medal = pct >= .9 ? '🏆' : pct >= .7 ? '🌟' : pct >= .5 ? '👍' : '💪';
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const rows = answers.map((a, i) =>
+    `<tr style="border-bottom:1px solid #e2e8f0;background:${a.ok?'#f0fdf4':'#fef2f2'}">
+      <td style="padding:12px 14px;font-size:20px;vertical-align:top;width:36px">${a.ok?'✅':'❌'}</td>
+      <td style="padding:12px 14px;font-family:sans-serif;vertical-align:top">
+        <div style="font-weight:600;color:#1e293b;margin-bottom:4px">Q${i+1}. ${esc(a.q)}</div>
+        <div style="font-size:13px;color:${a.ok?'#15803d':'#991b1b'}">Bonne réponse : <strong>${esc(a.correct)}</strong></div>
+      </td>
+    </tr>`
+  ).join('');
+  emailjs.init({ publicKey: EMAILJS_KEY, privateKey: EMAILJS_PRIVATE_KEY });
+  emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+    child_name:  child,
+    quiz_topic:  topic,
+    score:       `${score} / ${total}`,
+    score_color: scoreColor,
+    medal:       medal,
+    date:        new Date().toLocaleDateString('fr-FR', {weekday:'long',year:'numeric',month:'long',day:'numeric'}),
+    rows:        rows
+  })
+  .then(() => console.log('EmailJS : envoi réussi'))
+  .catch(e => console.warn('EmailJS : erreur', e));
+}
+
+function confetti() {
+  const cols = ['#06b6d4','#0891b2','#10b981','#ef4444','#60a5fa','#f472b6','#fcd34d'];
+  for (let i = 0; i < 70; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div');
+      c.className = 'conf';
+      const size = 6 + Math.random() * 9;
+      c.style.cssText = `left:${Math.random()*100}vw;top:-12px;width:${size}px;height:${size}px;background:${cols[~~(Math.random()*cols.length)]};animation-duration:${2+Math.random()*2}s;border-radius:${Math.random()>.5?'50%':'3px'}`;
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 4500);
+    }, i * 45);
+  }
+}
+
+function goHome() { ST = {topic:null,qs:[],idx:0,answers:[],answered:false,correct:0}; show('home-screen'); initHome(); }
+
+initHome();
+
+// ─── Register Service Worker (PWA) ───────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.log('SW error:', err));
+  });
+}
+</script>
+</body>
+</html>
